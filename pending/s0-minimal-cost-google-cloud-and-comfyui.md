@@ -1,6 +1,6 @@
-# Task: Build the Expanded Wishes S0 Google Cloud Environment and Complete Asset Suite
+# Task: Build the Expanded Wishes S0 Google Cloud Environment, Claude Operations VM, and Complete Asset Suite
 
-Created: 2026-08-03
+Created: 2026-08-27
 Priority: High
 Mode: implementation-with-approval-gates
 
@@ -21,26 +21,34 @@ Allow Service Account Key Creation: false
 
 ## Objective
 
-Build the first cloud-hosted Wishes S0 development environment using the lowest reasonable cost configuration that includes every required platform component:
+Build the first cloud-hosted Wishes S0 development environment using the lowest reasonable cost configuration that includes every required platform component and a stoppable Claude Code cloud workstation.
 
-- four separate application-data Cloud Storage buckets;
-- one separate Terraform-state bucket;
-- a dedicated PostgreSQL `asset` schema;
-- Memorystore for Redis;
-- Pub/Sub request, result, and dead-letter transport;
-- Cloud Run CPU services that scale to zero;
-- a one-shot Cloud Run NVIDIA L4 GPU Job for ComfyUI;
+Required S0 platform:
+
+- one dedicated Google Cloud S0 project;
+- one custom VPC and regional subnet;
+- one Terraform-state bucket;
+- one Artifact Registry Docker repository;
+- four separate application-data Cloud Storage buckets: models, workflows, inputs, outputs;
+- one Cloud SQL PostgreSQL shared-core single-zone instance;
+- one dedicated PostgreSQL `asset` schema;
+- one Memorystore Redis Basic Tier 1 GiB instance;
+- Pub/Sub asset request, result, and dead-letter transport;
+- one Cloud Run Wishes application service with minimum instances zero;
+- one Cloud Run asset service with minimum instances zero;
+- one Cloud Run NVIDIA L4 ComfyUI GPU Job;
+- one Claude Code Operations VM for remote/cloud development;
 - the complete Wishes asset suite;
-- human review, approval, publication, lineage, and audit;
-- reproducible Terraform, teardown, and rebuild procedures.
+- human review, approval, publication, lineage, staleness, and audit;
+- reproducible Terraform, start/stop, teardown, and rebuild procedures.
 
 PostgreSQL remains authoritative. Redis is transient coordination only. Pub/Sub is transport only. ComfyUI creates candidates only and may never approve, publish, attach, or mutate authoritative Wishes game state.
 
-This task supersedes conflicting instructions in the earlier S0 and Cloud Run GPU tasks. Preserve their valid portrait-first, lineage, model, workflow, storage, and security requirements while implementing the expanded S0 baseline in the current deployment appendices.
+The Claude Operations VM is a workstation only. It must not host Wishes application services, PostgreSQL, Redis, ComfyUI, CI runners, or required unattended background tasks.
 
-Do not run `terraform apply`, change billing linkage, create secret values, destroy resources, or perform destructive database migration until the user reviews the plan, cost estimate, IAM/database grant matrix, migration plan, and resource inventory and explicitly approves that stage.
+Do not run `terraform apply`, alter billing linkage, create secret values, destroy resources, or perform destructive database migration until the user reviews the plan, cost estimate, IAM/database grant matrix, migration plan, Operations VM configuration, and resource inventory and explicitly approves that stage.
 
-## Canonical sources
+## Canonical documentation
 
 Read from `Krowthen/wishes-canon`, branch `ryancox-chatgpt` unless already merged:
 
@@ -74,74 +82,47 @@ drafts/deployment/appendices/f-documentation-completion-and-implementation-readi
 canon/glossary/Wishes_Version_Numbering_Standard.md
 ```
 
-Review and reconcile these prior inbox inputs:
-
-```text
-pending/comfyui-asset-pipeline/01_system_architecture.md
-pending/comfyui-asset-pipeline/02_database_and_storage.md
-pending/comfyui-asset-pipeline/03_comfyui_workflows.md
-pending/comfyui-asset-pipeline/04_backend_and_api.md
-pending/deploy-comfyui-cloud-run-gpu.md
-pending/s0-minimal-cost-google-cloud-and-comfyui.md
-```
-
-The current file replaces the previous version of `pending/s0-minimal-cost-google-cloud-and-comfyui.md`.
+Review and reconcile the earlier ComfyUI inbox specifications rather than creating parallel systems.
 
 ## Repository workflow
 
-1. Read the root `CLAUDE.md` in `wishes-game` before editing.
-2. Inspect the current branch, repository status, submodules, CI configuration, and branch protections.
-3. Create or reuse a branch named `claude/s0-minimal-cloud`.
+1. Read root `CLAUDE.md` in `wishes-game` before editing.
+2. Inspect current repository status, branch protections, migrations, tests, submodules, and CI.
+3. Create or reuse `claude/s0-minimal-cloud`.
 4. Do not work directly on `main`.
-5. Commit intentionally by coherent unit.
+5. Commit coherent units intentionally.
 6. Push the Claude branch.
-7. Open a draft PR only after the plan and implementation changes are reviewable.
-8. Never commit secrets, model binaries, LoRA binaries, Terraform state, generated private assets, or local credentials.
+7. Open a draft PR when implementation is reviewable.
+8. Never commit secrets, model/LoRA binaries, Terraform state, private generated assets, or local credentials.
 
-## 1. Repository and implementation inventory
+## Phase 1 — Inventory and reconciliation
 
-Before modifying code, inspect and report:
+Before editing, report application frameworks/entrypoints, service boundaries, migration convention/head, current asset schema and roles, Redis/Pub/Sub/outbox implementation, Terraform/cloud files, Docker/build structure, ComfyUI integration, authentication/review UI, tests, and existing cloud resources when read access is available.
 
-- application languages, frameworks, and container entrypoints;
-- server and service boundaries;
-- database migration convention and current migration head;
-- current PostgreSQL schemas, tables, functions, views, and roles;
-- current asset tables, asset roles, boundaries, versions, attachments, requests/jobs, workflow registry, lineage, review, and publication logic;
-- current Redis, queue, Pub/Sub, or outbox implementations;
-- existing Dockerfiles and build scripts;
-- existing Terraform or Google Cloud files;
-- existing ComfyUI integration, workflow JSON, manifests, models, LoRAs, and asset generator;
-- current authentication, authorization, and asset-review UI;
-- current test, lint, migration, and development commands;
-- existing cloud resources if credentials permit read-only inspection.
+Produce a reconciliation table: requirement, current implementation, gap, required change, risk, evidence.
 
-Produce a reconciliation table with requirement, current implementation, gap, required change, risk, and evidence.
-
-Do not create parallel systems merely because names differ. Where the architecture requires a dedicated `asset` schema, plan a controlled migration from the current implementation.
-
-## 2. S0 architecture and cost plan
-
-Prepare the exact resource inventory before cloud apply.
+## Phase 2 — Terraform and cost plan
 
 Required topology:
 
 ```text
-one Google Cloud project
-one region, initially us-central1 after availability validation
+one GCP project
+one region, initially us-central1 after validation
 one custom VPC
-one regional subnet, /26 or larger
+one regional subnet
 one Terraform-state bucket
-one Artifact Registry Docker repository
+one Artifact Registry repository
+one Claude Code Operations VM
 one Cloud Run application service
 one Cloud Run asset service
 one Cloud Run ComfyUI L4 GPU Job
 one shared-core single-zone Cloud SQL PostgreSQL instance
 one PostgreSQL asset schema
-one Memorystore for Redis Basic Tier 1 GiB instance
+one Redis Basic 1 GiB instance
 three Pub/Sub topics
 three Pub/Sub subscriptions
 four application-data buckets
-Secret Manager containers required by code
+required Secret Manager containers
 Cloud Logging and Monitoring defaults
 one Cloud Billing budget
 ```
@@ -150,24 +131,130 @@ Explicitly excluded unless separately approved:
 
 ```text
 GKE
-external HTTP(S) load balancer
-Cloud NAT
-Serverless VPC Access connector when Direct VPC egress works
-Cloud SQL HA or replicas
-Memorystore Standard Tier or Redis Cluster
+external load balancer
+Cloud Armor
+Cloud SQL HA/replicas
+Memorystore Standard/Cluster
 additional Redis instances
 additional GPUs
-GPU concurrency above one
+GPU concurrency > 1
 public raw ComfyUI
 service-account keys
 committed-use discounts
 cross-region replication
 production data
+always-on Operations VM requirement
 ```
 
-### Four mandatory application buckets
+Default S0 budget:
 
-Create exactly these logical data boundaries:
+```hcl
+monthly_budget_usd = 150
+```
+
+Report idle, light-use, and active-development monthly estimates and active GPU cost per minute/hour. Explicitly include the Operations VM at 25%, 50%, and 100% uptime.
+
+Stop before apply and present the plan package for approval.
+
+## Phase 3 — Claude Code Operations VM
+
+Required baseline:
+
+```text
+Name: wishes-s0-usc1-claude-ops
+Compute Engine: e2-standard-2
+CPU: 2 vCPU
+RAM: 8 GiB
+Boot disk: 100 GB pd-balanced
+Swap: 4 GiB
+OS: Ubuntu 24.04 LTS
+GPU: none
+External IP: none
+Expected uptime: <= 50%
+Background tasks: none required
+```
+
+Security/access:
+
+- IAP TCP forwarding for SSH;
+- OS Login;
+- MFA;
+- Shielded VM;
+- weak attached host service account;
+- bounded S0 deployment/audit impersonation;
+- no static service-account keys;
+- no production deploy credentials.
+
+Install and validate:
+
+```text
+Claude Code CLI
+git
+gh
+gcloud
+terraform
+Docker client
+psql
+redis-cli
+kubectl
+helm
+tmux
+jq
+yq
+repository language/toolchain dependencies
+```
+
+Create a persistent `wishes-game` checkout and worktree convention.
+
+### Remote development
+
+Configure Claude Code Remote Control on the VM so the user can connect from phone/tablet/browser while the personal computer is powered off.
+
+Validate start, connect, harmless repo operation, disconnect/reconnect, and stop behavior. Code execution must remain on the VM.
+
+### Local + VM Claude Code coordination
+
+Local and VM Claude Code are independent sessions. They do not automatically share conversation history, terminal output, filesystem state, uncommitted files, process state, or permission prompts.
+
+Use Git branches/worktrees for source synchronization.
+
+When supported by the installed Claude Code version, configure and validate cross-session messaging between local and VM sessions.
+
+Recommended names:
+
+```text
+local-wishes-dev
+vm-wishes-s0
+```
+
+Required validation:
+
+- `/list-agents` can identify the reachable peer session when both are online/configured;
+- local Claude can ask VM Claude for a bounded status summary;
+- VM Claude can send a milestone/update back;
+- messages remain text coordination only;
+- messages do not bypass permission prompts or human approval;
+- uncommitted files remain machine-local until synchronized through Git or an explicitly approved copy path.
+
+Recommended VM-session instruction:
+
+```text
+At the end of each numbered implementation phase, send a concise status message to @local-wishes-dev containing: phase, completed work, commit SHA if any, tests, blockers, next action. Do not send secrets or large logs.
+```
+
+For exact live progress, use Remote Control to the VM session or attach to its tmux session. Cross-session messaging is for status/handoff summaries, not terminal mirroring.
+
+### Start/stop procedure
+
+Document start VM, IAP connect, tmux attach/create, Claude Remote Control start/resume, repository update, safe session shutdown, VM stop, and Terraform rebuild.
+
+No required S0 background task may depend on the VM staying on.
+
+## Phase 4 — Network and storage
+
+Create S0 VPC/subnet. Use Direct VPC egress for Cloud Run private dependencies where supported.
+
+Create exactly four application buckets:
 
 ```text
 <project-id>-wishes-s0-models
@@ -176,165 +263,13 @@ Create exactly these logical data boundaries:
 <project-id>-wishes-s0-outputs
 ```
 
-The Terraform-state bucket is separate and is not one of the four. Do not merge the four application buckets or replace them with prefixes in one bucket.
+Terraform state is separate. Apply public-access prevention, uniform bucket-level access, lifecycle/version/checksum conventions, and least privilege.
 
-### Cost report
+If the Operations VM requires outbound internet and no simpler approved egress path exists, include the minimum-cost NAT design and its cost in the plan before apply.
 
-Report:
+## Phase 5 — Cloud SQL and `asset` schema
 
-- standing monthly Cloud SQL estimate;
-- standing monthly Redis estimate;
-- expected Pub/Sub cost at S0 volume;
-- storage and operation assumptions for each bucket;
-- Artifact Registry storage/build assumptions;
-- Cloud Run CPU assumptions;
-- active GPU cost per minute and per hour;
-- estimated cost for one complete asset suite;
-- total expected monthly cost for idle, light-use, and development-test scenarios;
-- quotas and availability risks;
-- budget thresholds.
-
-Default budget:
-
-```hcl
-monthly_budget_usd = 100
-```
-
-Alerts:
-
-```text
-25% actual
-50% actual
-80% actual
-100% actual
-100% forecast
-```
-
-A budget is not a hard spending cap. Do not implement automatic billing shutdown or destructive cost actions.
-
-## 3. Terraform structure
-
-Use current conventions. If none exist, use a structure equivalent to:
-
-```text
-infra/terraform/
-  bootstrap/
-  environments/s0/
-  modules/
-    project_services/
-    budget/
-    network/
-    artifact_registry/
-    storage_bucket/
-    cloud_sql/
-    redis/
-    pubsub/
-    service_accounts/
-    cloud_run_service/
-    cloud_run_job/
-    secret_container/
-```
-
-Required behavior:
-
-- remote GCS state with locking and version protection;
-- provider lock file committed;
-- labels where supported;
-- explicit project and region variables;
-- no secret values in state or variable files;
-- Cloud SQL deletion protection during normal development;
-- lifecycle protections for stateful resources;
-- stable names and outputs;
-- no manual resources outside documented bootstrap exceptions;
-- `terraform fmt`, `validate`, and plan checks;
-- plan artifact and add/change/destroy summary;
-- explicit stateful replacement detection.
-
-## 4. Network and Direct VPC egress
-
-Create `wishes-s0-vpc` and a regional S0 subnet.
-
-Use Direct VPC egress for Cloud Run services and jobs that require Redis/private access. Default to `private-ranges-only`.
-
-Requirements:
-
-- validate subnet size;
-- attach only required services/jobs;
-- configure narrow firewall rules;
-- avoid Cloud NAT unless a validated dependency cannot function without it;
-- document startup retries for VPC connectivity;
-- validate Redis connectivity from the asset service;
-- keep raw ComfyUI without public ingress.
-
-## 5. Four storage buckets
-
-Create all four buckets as regional Standard Storage.
-
-### Models bucket
-
-```text
-checkpoints/<sha256>/<filename>
-diffusion-models/<sha256>/<filename>
-text-encoders/<sha256>/<filename>
-clip/<sha256>/<filename>
-vae/<sha256>/<filename>
-controlnet/<sha256>/<filename>
-upscale-models/<sha256>/<filename>
-loras/<sha256>/<filename>
-manifests/models/<version-uuid>.json
-manifests/loras/<version-uuid>.json
-```
-
-### Workflows bucket
-
-```text
-api/<workflow-version-uuid>.json
-manifests/<workflow-version-uuid>.json
-schemas/<schema-version>.json
-packages/<package-version-uuid>/
-```
-
-### Inputs bucket
-
-```text
-objects/<object-type>/<object-uuid>/<job-uuid>/
-manifests/executions/<job-uuid>.json
-references/<job-uuid>/
-masks/<job-uuid>/
-poses/<job-uuid>/
-```
-
-### Outputs bucket
-
-```text
-pending/<object-type>/<object-uuid>/<role>/<job-uuid>/
-rejected/<object-type>/<object-uuid>/<role>/<asset-version-uuid>/
-approved/<object-type>/<object-uuid>/<role>/<asset-version-uuid>/
-published/<object-type>/<object-uuid>/<role>/<asset-version-uuid>/
-evidence/executions/<job-uuid>/
-evidence/suites/<object-uuid>/
-database-exports/<timestamp>/
-```
-
-Apply uniform bucket-level access, public-access prevention, immutable version/checksum references, lifecycle rules, no public listing, least-privilege permissions, and no runtime `roles/storage.admin`.
-
-Published assets remain in the outputs bucket and are served through approved application or bounded signed-delivery controls.
-
-## 6. Cloud SQL and dedicated asset schema
-
-Use one Cloud SQL PostgreSQL database named `wishes` with the smallest supported shared-core development machine type.
-
-S0 posture:
-
-```text
-single zone
-no HA
-no replicas
-smallest practical storage
-synthetic/sanitized data only
-deletions protected during normal operation
-Cloud SQL connector from Cloud Run
-```
+Use the smallest supported shared-core development machine.
 
 Create roles:
 
@@ -351,76 +286,13 @@ Create:
 CREATE SCHEMA IF NOT EXISTS asset AUTHORIZATION wishes_asset_owner;
 ```
 
-The final asset domain must contain schema-qualified compatible equivalents of:
+Migrate/reconcile existing asset-domain objects into `asset`. Preserve `asset_role.boundaries JSONB`, UUIDs, versions, lineage, review/audit history, workflow/model/LoRA metadata, publication state, and outbox/inbox idempotency. Do not leave duplicate authoritative asset systems.
 
-```text
-asset.asset_type
-asset.asset_role
-asset.asset_workflow
-asset.asset_model
-asset.asset_model_version
-asset.asset_lora
-asset.asset_lora_version
-asset.asset_job
-asset.asset
-asset.asset_version
-asset.asset_attachment
-asset.asset_dependency
-asset.asset_review_event
-asset.asset_publication
-asset.asset_outbox
-asset.asset_inbox
-```
+## Phase 6 — Redis and Pub/Sub
 
-Preserve `asset_role.boundaries JSONB`, UUIDs, UTC timestamps, immutable versions, source/root lineage, status guards, actor/audit history, outbox/inbox idempotency, and the `wishes_` function prefix.
+Deploy Redis Basic Tier 1 GiB. Use only for transient coordination. Validate flush/recreate recovery without durable state loss.
 
-Required functions or compatible application transactions:
-
-```text
-asset.wishes_asset_request_create
-asset.wishes_asset_job_claim
-asset.wishes_asset_result_reconcile
-asset.wishes_asset_approve
-asset.wishes_asset_reject
-asset.wishes_asset_publish
-asset.wishes_asset_mark_descendants_stale
-asset.wishes_asset_suite_status
-```
-
-Inspect the current schema, map current objects, produce migration and rollback plans, migrate data safely, use temporary compatibility views only when necessary, remove or de-authorize duplicate public-schema authorities, and validate counts, checksums, references, versions, and audit history.
-
-Do not create a second independent asset system while leaving the current one authoritative.
-
-## 7. Memorystore Redis
-
-Deploy:
-
-```text
-Tier: Basic
-Capacity: 1 GiB
-Region: same as Cloud Run
-Redis version: current approved 7.x
-HA: no
-```
-
-Enable Redis AUTH and in-transit encryption when supported by the client and provider. Document any compatibility exception before apply.
-
-Approved uses:
-
-- worker and dispatcher leases;
-- transient progress;
-- rate limiting;
-- idempotency acceleration;
-- short-lived caches;
-- optional transient Redis Streams for operational visibility.
-
-Redis is not authoritative.
-
-Test connection through Direct VPC egress, lease expiry, duplicate-worker exclusion, rate limits, resets, flush/recreation, and recovery from PostgreSQL/outbox state without asset-state loss.
-
-## 8. Pub/Sub transport
-
-Create topics:
+Create Pub/Sub topics:
 
 ```text
 wishes-s0-asset-requests
@@ -436,111 +308,30 @@ wishes-s0-asset-result-reconciler
 wishes-s0-asset-dead-letter-monitor
 ```
 
-Use standard Pub/Sub, not Pub/Sub Lite.
+Use PostgreSQL inbox/outbox idempotency, ack-after-commit, bounded retention, retry/DLQ, and replay tests.
 
-Rules:
+## Phase 7 — Cloud Run services and ComfyUI
 
-- identifiers, versions, attempts, timestamps, and manifest URIs only;
-- no secrets, large prompts, or arbitrary workflow JSON;
-- at-least-once delivery;
-- idempotency through `asset.asset_inbox` and job fences;
-- acknowledgement only after durable database commit;
-- dead-letter routing after five attempts by default;
-- bounded retention;
-- replay from transactional outbox history;
-- monitor backlog age, publish errors, delivery attempts, and DLQ count.
+Deploy separate CPU services with `min=0`, `max=1`, 1 vCPU, and 512 MiB initially unless evidence requires more.
 
-Request event:
-
-```json
-{
-  "schemaVersion": 1,
-  "eventId": "uuid",
-  "assetJobUuid": "uuid",
-  "workflowVersionUuid": "uuid",
-  "executionManifestUri": "gs://inputs-bucket/manifests/executions/job.json",
-  "attempt": 1,
-  "createdAt": "timestamp"
-}
-```
-
-Result event:
-
-```json
-{
-  "schemaVersion": 1,
-  "eventId": "uuid",
-  "assetJobUuid": "uuid",
-  "cloudRunExecution": "name",
-  "resultManifestUri": "gs://outputs-bucket/evidence/executions/job/result.json",
-  "status": "generated",
-  "createdAt": "timestamp"
-}
-```
-
-Validate outbox-before-publish, duplicate request/result delivery, retry, DLQ, ack-after-commit, replay, and poison-message handling.
-
-## 9. Cloud Run services
-
-Deploy at least two CPU services:
+ComfyUI GPU Job profile:
 
 ```text
-Wishes application
-Wishes asset service
+NVIDIA L4 x1
+4 vCPU
+16 GiB RAM
+1 task
+parallelism 1
+retries 0
+timeout 3600s
+zonal redundancy disabled
 ```
 
-Initial settings:
+Pin ComfyUI/custom nodes. Use immutable model/workflow/LoRA manifests and checksums. Raw ComfyUI is never public.
 
-```text
-min instances: 0
-max instances: 1
-cpu: 1
-memory: 512 MiB unless evidence requires more
-request-based billing
-private-ranges-only Direct VPC egress where required
-```
+## Phase 8 — Complete asset suite
 
-The application handles player/operator authentication, game APIs, review UI integration, approved/published asset reads, and calls the asset service rather than directly mutating asset tables.
-
-The asset service handles requests, prompts, workflow/model/LoRA selection, asset-schema transactions, outbox publication, result reconciliation, Redis leases/progress, GPU Job execution, candidate lifecycle, lineage, staleness, and suite status.
-
-Expose `GET /health` and `GET /ready`. Asset readiness checks PostgreSQL, Redis, Pub/Sub configuration, and all four buckets.
-
-## 10. ComfyUI GPU Job
-
-Implement one bounded Cloud Run Job:
-
-```text
-GPU: NVIDIA L4 x1
-CPU: 4
-Memory: 16 GiB
-Tasks: 1
-Parallelism: 1
-Retries: 0
-Timeout: 3600 seconds
-Zonal redundancy: disabled
-```
-
-The image must pin ComfyUI, custom nodes, and packages; contain no credentials; bind raw ComfyUI to loopback; read immutable manifests; validate checksums; download only required artifacts; submit API workflows; upload outputs and results; publish the result event; and exit nonzero on invalid input or failed durable publication.
-
-Per-execution identifiers:
-
-```text
-ASSET_JOB_UUID
-WORKFLOW_VERSION_UUID
-INPUT_MANIFEST_URI
-OUTPUT_PREFIX_URI
-EXECUTION_SNAPSHOT_URI
-PUBSUB_RESULT_TOPIC
-```
-
-ComfyUI never connects to PostgreSQL and never approves or publishes assets.
-
-## 11. Complete asset suite
-
-S0 is not complete after portrait generation.
-
-Required primary roles:
+Required primary assets:
 
 ```text
 portrait
@@ -551,226 +342,59 @@ card_front
 tactical_sprite_sheet
 ```
 
-Required tactical animations:
+Tactical animations: `idle`, `walk`, `run`, `attack`, `cast`, `hit`, `down`, `guard`, `interact` in `front`, `back`, `left`, `right` directions.
+
+Emojis: happy, angry, sad, surprised, confused, determined, injured, laughing.
+
+Only portrait may originate from text alone. Downstream identity assets use the approved portrait or approved derivative as visual authority. Card text/stats are deterministic application rendering. Icons/thumbnails prefer deterministic image processing where appropriate.
+
+Generate, review, approve, and publish one complete suite. Replace the approved portrait and verify descendants become stale and can be regenerated.
+
+## Phase 9 — Validation and evidence
+
+Retain evidence for:
+
+- Terraform plan/apply/re-plan;
+- resource inventory;
+- IAM/database-grant matrix;
+- Operations VM access/no-external-IP;
+- VM start/stop and cost behavior;
+- Remote Control mobile/browser test;
+- local/VM cross-session status-message test;
+- four bucket boundaries;
+- Cloud SQL migration/rollback;
+- Redis flush recovery;
+- Pub/Sub duplicate/retry/DLQ/replay;
+- Cloud Run scale-to-zero;
+- GPU Job execution;
+- full asset-suite lineage/review/publication;
+- staleness/regeneration;
+- budget alerts;
+- no static service-account keys;
+- no public raw ComfyUI;
+- destroy/rebuild procedure.
+
+## Apply gate
+
+Before first `terraform apply`, provide:
 
 ```text
-idle
-walk
-run
-attack
-cast
-hit
-down
-guard
-interact
+Terraform plan
+add/change/destroy summary
+stateful replacement analysis
+resource inventory
+IAM matrix
+database role/grant matrix
+asset migration plan
+Operations VM access/security plan
+Operations VM current-price estimate at 25/50/100% uptime
+Redis/Cloud SQL/storage/GPU cost estimate
+quota/regional availability report
+rollback/destroy plan
 ```
 
-Required directions:
+Then stop for explicit user approval.
 
-```text
-front
-back
-left
-right
-```
+## Definition of done
 
-Required common emoji roles:
-
-```text
-emoji_happy
-emoji_angry
-emoji_sad
-emoji_surprised
-emoji_confused
-emoji_determined
-emoji_injured
-emoji_laughing
-```
-
-Required manifests/processors:
-
-```text
-portrait_generate
-portrait_refine
-full_body_from_portrait
-icon_from_portrait_or_crop
-thumbnail_from_portrait
-card_front_compose
-sprite_base_from_full_body
-sprite_sheet_from_sprite_base
-emoji_from_portrait
-```
-
-Rules:
-
-- portrait is generated from structured character/card data;
-- identity-bearing descendants use an approved portrait or full body;
-- full body normally precedes sprites;
-- icon and thumbnail prefer deterministic crop/resize;
-- card text, stats, symbols, frames, and labels are deterministic rendering;
-- every role is versioned, reviewable, rejectable, regenerable, and publishable;
-- every derived asset records source/root lineage and source version;
-- portrait replacement marks dependent suite assets stale;
-- stale assets cannot remain current published authority;
-- suite status is queryable by object.
-
-Minimum API operations:
-
-```text
-POST /api/assets/requests
-GET  /api/assets/jobs/:jobUuid
-GET  /api/assets/objects/:objectType/:objectUuid/suite
-GET  /api/assets/:assetUuid
-GET  /api/assets/:assetUuid/lineage
-POST /api/assets/:assetUuid/approve
-POST /api/assets/:assetUuid/reject
-POST /api/assets/:assetUuid/regenerate
-POST /api/assets/:assetUuid/publish
-POST /api/assets/objects/:objectType/:objectUuid/regenerate-stale
-```
-
-Review evidence must display source, candidate, role/version, workflow/runtime, model/LoRA stack, prompts, seed/settings, dimensions/checksum, lineage, actor/comments, and tactical frame metadata.
-
-## 12. Tests
-
-Add tests for:
-
-### Database
-
-- clean and upgrade migrations;
-- schema grants and denied actions;
-- outbox atomicity and inbox idempotency;
-- status guards and current-version uniqueness;
-- source/root lineage and staleness;
-- suite-completeness query.
-
-### Redis
-
-- lease expiry;
-- concurrent exclusion;
-- flush recovery;
-- rate limit;
-- connection reset.
-
-### Pub/Sub
-
-- publish/consume;
-- duplicate request/result;
-- retry and DLQ;
-- replay;
-- ack-after-commit.
-
-### Storage
-
-- all four buckets exist;
-- public-access prevention;
-- unauthorized cross-bucket access denied;
-- ComfyUI reads only required buckets and creates only assigned outputs;
-- approval/publication is controlled by asset service;
-- checksum mismatch rejected.
-
-### ComfyUI
-
-- missing artifacts fail safely;
-- invalid checksum fails before generation;
-- timeout/cancellation classified;
-- result manifest validated;
-- no public raw endpoint;
-- no database access.
-
-### Full suite
-
-- generate and approve portrait and full body;
-- derive and approve icon and thumbnail;
-- compose and approve card front;
-- generate tactical animations/directions and validate metadata;
-- generate and approve all emojis;
-- publish the suite;
-- replace portrait and verify staleness;
-- regenerate a stale descendant;
-- verify audit and lineage.
-
-## 13. Plan and approval checkpoint
-
-Before cloud apply, provide:
-
-1. repository inspection summary;
-2. files changed;
-3. schema migration and rollback design;
-4. Terraform plan file/hash and summary;
-5. complete resource inventory;
-6. IAM matrix;
-7. database role/grant matrix;
-8. bucket access matrix;
-9. Pub/Sub resource/message table;
-10. Redis purpose/recovery statement;
-11. quota and regional availability report;
-12. standing and usage cost estimate;
-13. per-GPU-hour and complete-suite cost estimate;
-14. risks and unresolved prerequisites;
-15. apply and validation plan;
-16. destroy and recovery procedures.
-
-Stop and wait for explicit approval before apply.
-
-## 14. Approved apply and validation
-
-After explicit approval only:
-
-1. apply Terraform;
-2. query every resource;
-3. run migrations;
-4. deploy immutable image digests;
-5. validate identities and denied permissions;
-6. validate Redis and Pub/Sub;
-7. execute the complete asset suite;
-8. review and publish the suite;
-9. test portrait replacement and staleness;
-10. record costs, logs, IDs, checksums, and evidence;
-11. run a stable post-apply plan;
-12. prove destroy/rebuild behavior in an approved window.
-
-## Stop conditions
-
-Stop and report when:
-
-- project or billing target is ambiguous;
-- the region lacks L4, Cloud SQL, Redis, or quota;
-- estimated cost exceeds the approved budget;
-- Terraform proposes unexpected destruction or replacement;
-- any application bucket would be omitted or combined;
-- the `asset` schema cannot be migrated safely;
-- duplicate authoritative asset tables would remain;
-- Redis or Pub/Sub would be omitted;
-- a static service-account key appears necessary;
-- raw ComfyUI would become public;
-- model or LoRA licensing is unclear;
-- the complete asset suite cannot meet the bounded Job contract;
-- production data would enter S0;
-- secret values would enter Git, logs, Terraform state, or task output.
-
-## Required final report
-
-Return one consolidated report containing:
-
-```text
-Summary
-Repository and branch
-Commits and draft PR
-Files changed
-Database schema and migration results
-Terraform resources planned/applied
-Four-bucket inventory and IAM
-Redis configuration and validation
-Pub/Sub configuration and validation
-Cloud Run services and GPU Job
-Full asset-suite status
-Tests and evidence
-Costs and quotas
-Security exceptions
-Known gaps
-Rollback/destroy/rebuild procedure
-Approvals still required
-```
-
-Do not claim S0 completion unless all four buckets, the `asset` schema, Redis, Pub/Sub, and the complete reviewed asset suite exist and have been validated.
+S0 is complete only when the VM, Remote Control, local/VM messaging, four buckets, `asset` schema, Redis, Pub/Sub, Cloud Run services, private ComfyUI GPU execution, complete asset suite, staleness behavior, budget controls, and destroy/rebuild procedures are implemented and validated, and no required background task depends on the Operations VM remaining powered on.
