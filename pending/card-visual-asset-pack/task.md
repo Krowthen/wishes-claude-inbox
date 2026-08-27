@@ -17,35 +17,53 @@ Import this approved visual bundle into the Wishes production asset-pack system 
 
 ## Approved Assets
 
-Files in `assets/` are repository-transfer approval/style copies for this task:
+Files currently under `assets/` are legacy repository-transfer copies from the first bundle submission:
 
-- `leaf-emblem-medallion.webp` — primary three-leaf emblem/medallion; canonical reusable leaf motif.
-- `border-buckle-crest.webp` — lower card-border buckle/crest motif; canonical lower binding element.
-- `card-front-border.webp` — approved front card-border direction using the leaf emblem and lower buckle/crest.
-- `card-back-simple.webp` — approved simple book-cover card back: centered leaf emblem, minimal center, retained outer bindings.
+- `leaf-emblem-medallion.webp` — primary three-leaf emblem/medallion.
+- `border-buckle-crest.webp` — lower card-border buckle/crest motif.
+- `card-front-border.webp` — approved front card-border direction.
+- `card-back-simple.webp` — approved simple book-cover card back.
 
-Files in `references/` and the bundle root document the approved design language:
+These historical WebP files are **not the preferred master format**. Do not create new WebP/JPEG/AVIF master or reference files from this task. Where original lossless sources are available, use those sources as the asset authority and retain the older compressed files only as lineage/legacy transfer artifacts.
 
-- `references/design-notes-reference.webp` — canonical visual reference sheet originally created in the Wishes design conversation. This is the approved source reference for the leaf emblem, individual leaf construction, tendrils, buckle variations, materials, finish, palette, and reuse guidance.
-- `design-notes.md` — authoritative written constraints and usage notes.
-- `manifest.json` — bundle inventory, roles, hashes, dimensions, and source notes.
+## Canonical Visual Reference
 
-**Important:** Do not use a user-interface screenshot as the design reference. The original generated design-reference sheet in `references/design-notes-reference.webp` is the visual authority for this bundle. User approval is represented by this task and the bundle status, not by a screenshot artifact.
+The required reference file is:
 
-The inbox image copies are intentionally compact WebP files for reliable repository transfer. They are authoritative approval/style references, not resolution masters. If identical higher-resolution approved sources exist in the Wishes asset system, retain those as production masters and link these copies as approval/style lineage. Do not substitute a different design.
+- `references/design-notes-reference.png` — the **original 1536 × 1024 lossless PNG design-reference sheet created in the Wishes design conversation**. It defines the approved leaf emblem, individual leaf construction, tendrils, buckle variations, materials, finish, palette, and reuse guidance.
+
+Expected SHA-256 for the original source PNG:
+
+`b063891133788f2f9aebc42d5f261923a304b8792ac5fc0e121ca825bd454323`
+
+The former 256px `references/design-notes-reference.webp` is explicitly superseded and must not be used. A user-interface screenshot is also not a design-reference source.
+
+The bundle root also contains:
+
+- `design-notes.md` — authoritative written constraints and image-master policy.
+- `manifest.json` — bundle inventory, roles, dimensions, source notes, and expected source checksum.
+
+## Image Master Policy
+
+- Preserve source, master, approval, and visual-reference images at their **original available resolution**.
+- Use **lossless PNG** for raster masters/reference sheets unless the user explicitly approves another master format.
+- Never downscale an approval/reference image merely to reduce repository size.
+- Do not convert reference/master images to WebP, JPEG/JPG, AVIF, or another lossy/quality-reducing format.
+- Do not treat a compact transfer derivative as visual authority when an original lossless source exists.
+- Preserve dimensions, checksum, source lineage, and original filename/source identity where supported.
 
 ## Scope
 
 1. Locate the current Wishes asset-pack registry/storage conventions and existing card frame/card back asset roles.
-2. Import these approved assets into the appropriate production asset pack(s).
+2. Import the approved assets into the appropriate production asset pack(s), preferring original lossless masters whenever available.
 3. Register reusable roles/metadata for at least:
    - card leaf emblem / medallion
    - card lower buckle / crest
    - card front border / frame
    - card back / cover
    - card visual design-reference sheet
-4. If the asset system supports source/reference lineage, attach the original design-reference sheet to the production assets.
-5. If derivative sizes/formats are required by the runtime, generate non-destructive derivatives and retain traceability to the supplied approved source.
+4. Attach `references/design-notes-reference.png` as the canonical source/reference lineage for this visual language.
+5. If derivative sizes/formats are required by runtime code, keep them non-authoritative and traceable to the lossless master; do not replace the master.
 6. Update any asset-pack manifest, role mapping, or seed data needed so the assets are discoverable from the Wishes asset management layer.
 
 ## Visual Requirements
@@ -105,8 +123,8 @@ The inbox image copies are intentionally compact WebP files for reliable reposit
 - Asset roles/manifest entries are added and valid.
 - Front border and simple card back are selectable/discoverable by the asset-management layer.
 - Leaf emblem and buckle/crest are independently reusable.
-- The original design-reference sheet is available to the supported generation/reference workflow.
-- Any generated derivatives are traceable back to the supplied approved source.
+- The original 1536 × 1024 PNG design-reference sheet is available to the supported generation/reference workflow.
+- Any generated derivatives are traceable back to the supplied lossless source.
 - Commit and push the completed integration to the appropriate Wishes repository/branch according to repository rules.
 
 ## Safety Rules
@@ -114,6 +132,7 @@ The inbox image copies are intentionally compact WebP files for reliable reposit
 - No destructive deletion of existing asset masters.
 - Do not overwrite a newer approved asset without explicit comparison and preservation of history.
 - Do not reinterpret the approved card-back design by adding more ornamentation.
+- Never promote a compressed/downscaled derivative over the approved lossless source.
 
 ## Notes
 
