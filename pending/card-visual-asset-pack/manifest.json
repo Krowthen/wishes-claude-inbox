@@ -32,20 +32,14 @@
   "references": [
     {
       "path": "references/design-notes-reference.webp",
-      "role": "design_reference",
+      "role": "approved_design_reference",
       "dimensions": [256, 171],
       "sha256": "ffa7cb6b6ca0d4c08de76b5204e20b6723de75c4c3df7388113c481c13a32507",
-      "note": "Prior design-note concept sheet."
-    },
-    {
-      "path": "references/approved-reference-screenshot.webp",
-      "role": "approved_design_reference",
-      "dimensions": [256, 175],
-      "sha256": "4d07cc44fb49f05688b0181a7195771e6d4caea855f7f4e4bab986d5113f1184",
-      "note": "User-approved screenshot confirming the locked emblem/buckle visual anchor."
+      "note": "Canonical compact copy of the original Leaf Emblem & Buckle design-reference sheet created in the Wishes design conversation. This, not a UI screenshot, is the visual reference authority."
     }
   ],
   "supersedes": [
-    "earlier ornate multi-crest card-back concept"
+    "earlier ornate multi-crest card-back concept",
+    "user-interface screenshot as a design-reference artifact"
   ]
 }
