@@ -26,12 +26,11 @@ Files in `assets/` are repository-transfer approval/style copies for this task:
 
 Files in `references/` and the bundle root document the approved design language:
 
-- `references/design-notes-reference.webp` — prior design-notes concept sheet for the leaf emblem and metal treatment.
-- `references/approved-reference-screenshot.webp` — exact user-approved reference screenshot confirming the emblem/buckle design as the locked visual anchor.
+- `references/design-notes-reference.webp` — canonical visual reference sheet originally created in the Wishes design conversation. This is the approved source reference for the leaf emblem, individual leaf construction, tendrils, buckle variations, materials, finish, palette, and reuse guidance.
 - `design-notes.md` — authoritative written constraints and usage notes.
 - `manifest.json` — bundle inventory, roles, hashes, dimensions, and source notes.
 
-The exact approved screenshot is the strongest approval reference if any stylistic ambiguity exists.
+**Important:** Do not use a user-interface screenshot as the design reference. The original generated design-reference sheet in `references/design-notes-reference.webp` is the visual authority for this bundle. User approval is represented by this task and the bundle status, not by a screenshot artifact.
 
 The inbox image copies are intentionally compact WebP files for reliable repository transfer. They are authoritative approval/style references, not resolution masters. If identical higher-resolution approved sources exist in the Wishes asset system, retain those as production masters and link these copies as approval/style lineage. Do not substitute a different design.
 
@@ -45,7 +44,7 @@ The inbox image copies are intentionally compact WebP files for reliable reposit
    - card front border / frame
    - card back / cover
    - card visual design-reference sheet
-4. If the asset system supports source/reference lineage, attach the design-note reference to the production assets.
+4. If the asset system supports source/reference lineage, attach the original design-reference sheet to the production assets.
 5. If derivative sizes/formats are required by the runtime, generate non-destructive derivatives and retain traceability to the supplied approved source.
 6. Update any asset-pack manifest, role mapping, or seed data needed so the assets are discoverable from the Wishes asset management layer.
 
@@ -106,7 +105,7 @@ The inbox image copies are intentionally compact WebP files for reliable reposit
 - Asset roles/manifest entries are added and valid.
 - Front border and simple card back are selectable/discoverable by the asset-management layer.
 - Leaf emblem and buckle/crest are independently reusable.
-- Design reference is available to the supported generation/reference workflow.
+- The original design-reference sheet is available to the supported generation/reference workflow.
 - Any generated derivatives are traceable back to the supplied approved source.
 - Commit and push the completed integration to the appropriate Wishes repository/branch according to repository rules.
 
@@ -119,4 +118,5 @@ The inbox image copies are intentionally compact WebP files for reliable reposit
 ## Notes
 
 - The simple centered-leaf card back supersedes the earlier, more ornate multi-crest back concept.
-- The leaf design/reference sheet was explicitly approved by the user as the style anchor for future designs.
+- The original leaf emblem & buckle design-reference sheet created in the design conversation is explicitly approved as the style anchor for future designs.
+- UI screenshots are not source/reference assets for this pack.
