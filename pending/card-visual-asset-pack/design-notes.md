@@ -8,6 +8,16 @@ Approved design anchor for the Wishes card asset pack.
 
 The card system should feel like a clean rustic fantasy artifact: aged metal bindings mounted to dark wood or book-cover material, with selective organic ornament and clear structural geometry. Ornament should feel handcrafted and storied, never busy.
 
+## Image Master Policy
+
+- All source, approval, master, and visual-reference raster images for this design language must be retained at the **original available resolution**.
+- Use **lossless PNG** for raster masters and reference sheets.
+- Never downscale an approval/reference image merely to make repository transfer smaller.
+- Do not convert master/reference images to WebP, JPEG/JPG, AVIF, or other lossy/quality-reducing formats.
+- A reduced or compressed derivative must never become the visual authority when an original lossless source exists.
+- Record original dimensions and checksum in asset lineage/manifests when available.
+- Historical WebP transfer copies may remain only as legacy lineage; do not use them to regenerate or replace a lossless master.
+
 ## Primary Leaf Emblem
 
 - Three-leaf composition.
