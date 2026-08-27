@@ -1,0 +1,51 @@
+{
+  "package": "wishes-card-visual-asset-pack",
+  "status": "approved",
+  "created": "2026-08-26",
+  "delivery_note": "Compact WebP approval/style references optimized for Claude inbox transport. Preserve higher-resolution identical approved sources as production masters when available; retain this bundle as approval/style lineage.",
+  "assets": [
+    {
+      "path": "assets/leaf-emblem-medallion.webp",
+      "role": "card_leaf_emblem",
+      "dimensions": [256, 256],
+      "sha256": "c94386bf3f69fca3d3c8b34c45a87ce3e7205b8cb3b61ae51ee4ae97a35dedeb"
+    },
+    {
+      "path": "assets/border-buckle-crest.webp",
+      "role": "card_border_buckle",
+      "dimensions": [256, 256],
+      "sha256": "77c940e1cf5f91a04b65f0690c9037f5db5e8da5c7741c88e2c9033b92264bdb"
+    },
+    {
+      "path": "assets/card-front-border.webp",
+      "role": "card_front_border",
+      "dimensions": [256, 384],
+      "sha256": "0609fc97e5255a760af4b4dd0c4488107819dd6cb4a796a2503979788658af81"
+    },
+    {
+      "path": "assets/card-back-simple.webp",
+      "role": "card_back",
+      "dimensions": [256, 384],
+      "sha256": "7c77eac019b7a7b58196438d65b09aa7bc7dde952ac2de737df2d0746fd7fde3"
+    }
+  ],
+  "references": [
+    {
+      "path": "references/design-notes-reference.webp",
+      "role": "design_reference",
+      "dimensions": [256, 171],
+      "sha256": "ffa7cb6b6ca0d4c08de76b5204e20b6723de75c4c3df7388113c481c13a32507",
+      "note": "Prior design-note concept sheet."
+    },
+    {
+      "path": "references/approved-reference-screenshot.webp",
+      "role": "approved_design_reference",
+      "dimensions": [256, 175],
+      "sha256": "4d07cc44fb49f05688b0181a7195771e6d4caea855f7f4e4bab986d5113f1184",
+      "note": "User-approved screenshot confirming the locked emblem/buckle visual anchor."
+    }
+  ],
+  "supersedes": [
+    "earlier ornate multi-crest card-back concept"
+  ]
+}
