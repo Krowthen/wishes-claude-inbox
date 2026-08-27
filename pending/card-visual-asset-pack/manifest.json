@@ -2,43 +2,57 @@
   "package": "wishes-card-visual-asset-pack",
   "status": "approved",
   "created": "2026-08-26",
-  "delivery_note": "Compact WebP approval/style references optimized for Claude inbox transport. Preserve higher-resolution identical approved sources as production masters when available; retain this bundle as approval/style lineage.",
+  "image_master_policy": {
+    "preferred_raster_master": "png",
+    "preserve_original_resolution": true,
+    "downscale_reference_for_transport": false,
+    "lossy_master_formats_allowed": false,
+    "disallowed_master_or_reference_formats": ["webp", "jpg", "jpeg", "avif"],
+    "note": "Source, approval, master, and visual-reference raster images must remain lossless and at the original available resolution unless the user explicitly approves a different master format."
+  },
+  "delivery_note": "The original lossless source/reference is authoritative. Historical compressed transfer copies are legacy lineage only and must not replace an available lossless master.",
   "assets": [
     {
       "path": "assets/leaf-emblem-medallion.webp",
       "role": "card_leaf_emblem",
       "dimensions": [256, 256],
+      "status": "legacy_transfer_copy",
       "sha256": "c94386bf3f69fca3d3c8b34c45a87ce3e7205b8cb3b61ae51ee4ae97a35dedeb"
     },
     {
       "path": "assets/border-buckle-crest.webp",
       "role": "card_border_buckle",
       "dimensions": [256, 256],
+      "status": "legacy_transfer_copy",
       "sha256": "77c940e1cf5f91a04b65f0690c9037f5db5e8da5c7741c88e2c9033b92264bdb"
     },
     {
       "path": "assets/card-front-border.webp",
       "role": "card_front_border",
       "dimensions": [256, 384],
+      "status": "legacy_transfer_copy",
       "sha256": "0609fc97e5255a760af4b4dd0c4488107819dd6cb4a796a2503979788658af81"
     },
     {
       "path": "assets/card-back-simple.webp",
       "role": "card_back",
       "dimensions": [256, 384],
+      "status": "legacy_transfer_copy",
       "sha256": "7c77eac019b7a7b58196438d65b09aa7bc7dde952ac2de737df2d0746fd7fde3"
     }
   ],
   "references": [
     {
-      "path": "references/design-notes-reference.webp",
+      "path": "references/design-notes-reference.png",
       "role": "approved_design_reference",
-      "dimensions": [256, 171],
-      "sha256": "ffa7cb6b6ca0d4c08de76b5204e20b6723de75c4c3df7388113c481c13a32507",
-      "note": "Canonical compact copy of the original Leaf Emblem & Buckle design-reference sheet created in the Wishes design conversation. This, not a UI screenshot, is the visual reference authority."
+      "format": "png",
+      "dimensions": [1536, 1024],
+      "sha256": "b063891133788f2f9aebc42d5f261923a304b8792ac5fc0e121ca825bd454323",
+      "note": "Canonical original-resolution lossless Leaf Emblem & Buckle design-reference sheet created in the Wishes design conversation. This, not a UI screenshot or compressed derivative, is the visual-reference authority."
     }
   ],
   "supersedes": [
+    "references/design-notes-reference.webp",
     "earlier ornate multi-crest card-back concept",
     "user-interface screenshot as a design-reference artifact"
   ]
