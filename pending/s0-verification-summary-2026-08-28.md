@@ -126,36 +126,67 @@ single-database migration-file convention
 (`database/migrations/001...058_*.sql`) becomes per-database. Flagged in
 the task doc as needing its own pass before this executes.
 
-## 3. Pending gaps / open questions (unresolved, need a decision or more work either way)
+## 3. Update (same day): six explicit constraints resolved most of §2's open items
 
-1. **Cloud SQL instance topology**: one instance is chosen for now — please
-   confirm cost vs. isolation tradeoff is acceptable for S0, or if
-   `wishes_auth` should be a separate instance from day one.
-2. **Bucket count/shape depends on the ComfyUI decision above**: does
-   `wishes_gpu_v3` need its own model/workflow buckets distinct from the
-   existing `generated-assets/` local convention, or should
-   inputs/outputs be unified across all three providers?
-3. **IAM matrix** for the three new database roles + `wishes_gpu_v3`'s
-   runtime identity is not drafted yet — blocked on the above two.
-4. **Migration-file convention** for a multi-database repo is undecided
-   (per-database subdirectories? separate migration runners? one runner
-   with per-file target-database metadata?).
+After this summary was first drafted, the user issued six explicit
+constraints and asked for Phase 1/2 to be finalized. Applied, and **the
+canon itself was updated to match** (`wishes-canon` Appendices A, B, C, E,
+branch `ryancox-chatgpt`, commit `621f7e9`) so a future reader doesn't hit
+the same reconciliation gap this task started with:
+
+1. **Canonical project**: `wishes-506905` adopted via `terraform import`
+   for the existing broker/worker/Artifact Registry/Secret Manager
+   resources — no second project. *(Resolves the "one project" ambiguity.)*
+2. **Buckets**: exactly the four planned shared buckets
+   (models/workflows/inputs/outputs), provider/version key-prefixed, not
+   per-provider bucket sets. *(Resolves gap 2 below — no separate
+   `wishes_gpu_v3` bucket set needed.)*
+3. **Cloud SQL**: one instance, three databases confirmed
+   (`wishes_core`/`wishes_assets`/`wishes_auth`); no auth runtime built,
+   no `wishes_auth` credential exposed to any existing service in this
+   pass — explicit reservation, not a consumed service yet.
+4. **Transport**: Pub/Sub is push-delivered to Cloud Run consumers;
+   explicitly no always-on polling asset worker.
+5. **Operations VM egress**: if NAT is needed, its design and cost are
+   an **explicit pre-apply approval-package line item** — still
+   unresolved by design, not decided here.
+6. **Canon precursor**: appendices rewritten before finalizing, per
+   above.
+
+The IAM matrix (old gap 3) is now drafted — see the artifact — since it
+was blocked only on the topology/bucket decisions above, both now
+resolved.
+
+## 4. Still-open gaps / questions (updated list)
+
+1. **Cloud SQL instance topology**: one instance confirmed acceptable for
+   S0 (constraint 3 above); `wishes_auth` promotion to its own instance
+   remains a documented future option, not a current requirement.
+2. ~~Bucket count/shape~~ — resolved (constraint 2 above).
+3. ~~IAM matrix~~ — resolved, see the artifact.
+4. **Migration-file convention** for a multi-database repo is still
+   undecided (per-database subdirectories? separate migration runners?
+   one runner with per-file target-database metadata?) — needs its own
+   design pass before the `wishes_core`/`wishes_assets`/`wishes_auth`
+   split is actually implemented.
 5. **No live `gcloud` access** in this session — the quota/regional-
    availability report the task requires before apply has not been
    produced; needs to happen from an authorized environment.
-6. **`comfy update flow.md`'s concrete tasks** (asset_workflow columns,
+6. **Operations VM NAT/egress**: explicitly deferred to the apply-gate
+   package per constraint 5 above, not resolved here.
+7. **`comfy update flow.md`'s concrete tasks** (asset_workflow columns,
    `v2` workflow files, portal UI) are captured in the plan but not
    started — still needs the "triage before execution" pass the original
    inbox task asked for.
-7. **Queue management service (Phase 7a)** has zero design beyond stated
+8. **Queue management service (Phase 7a)** has zero design beyond stated
    responsibilities — genuinely open, not just unimplemented.
-8. **Sync-script gap** (unrelated to architecture, flagged for repo
+9. **Sync-script gap** (unrelated to architecture, flagged for repo
    hygiene): the external-inbox sync script never overwrites an existing
    local file, so a source-side update can silently strand a stale local
    copy — already happened once with this exact task file. Needs a
    content-hash/mtime-aware overwrite rule that still protects locally-
    edited files.
-9. **Git workflow discipline**: today's broker/worker/asset-service work
-   was committed straight to `main`; the task calls for a
-   `claude/s0-minimal-cloud` branch + draft PR going forward — not yet
-   started.
+10. **Git workflow discipline**: today's broker/worker/asset-service work
+    was committed straight to `main`; the task calls for a
+    `claude/s0-minimal-cloud` branch + draft PR going forward — not yet
+    started.
