@@ -53,3 +53,12 @@ character.
   2026-07-08. Original text preserved verbatim in `references/`.
 - The note contains spelling variants (Pysical, Consitution, Charaisma) — treat
   canon and existing stat naming as authoritative.
+
+## Completion (2026-08-27)
+
+All four sections were already implemented and bound to real
+`wishes_character` data in `CharacterSheet.tsx`; a stale header comment
+claiming otherwise was the only fix needed. Element grouping verified
+against Core Concept 1 (exact match). Validated end-to-end in-browser with
+Human, Elf, and Dwarf characters — all sections render live, correct
+numbers. See `wishes-game` `docs/claude/todo.md` for full detail.

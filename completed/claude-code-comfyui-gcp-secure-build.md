@@ -1064,3 +1064,25 @@ Report:
 15. remaining assumptions or blockers
 
 Never print or request the real Cloudflare Client ID or Client Secret.
+
+---
+
+# Completion Report (2026-08-27)
+
+Full detail in `wishes-game` `docs/claude/todo.md`. Summary:
+
+1. **Files created**: `server/comfy-broker/{pyproject.toml,Dockerfile,.env.example,README.md,src/comfy_broker/*.py,test/*.py}`, `clients/{comfy_broker_client.py,test_comfy_broker_client.py}`, `scripts/{comfy.py,deploy_comfy_broker.sh}`, `examples/{comfyui_generate_example.py,workflows/README.md}`, `infrastructure/terraform/comfy-broker/*.tf`.
+2. **Files modified**: `.gitignore` (`.venv/`, `*.egg-info/`, `.pytest_cache/`).
+3. **Tests run**: `pytest server/comfy-broker/test/ clients/test_comfy_broker_client.py`
+4. **Test results**: 59/59 passing, fully mocked (no real network/GCP/Cloudflare).
+5. **Static/security checks**: `terraform fmt -check` clean; `terraform init -backend=false` + `terraform validate` succeed (no plan/apply); dedicated regression tests grep source + `.tf` for secret literals, unauthenticated Cloud Run access, and agent Secret Manager access — all clean.
+6. **Container build command**: `docker build -t <image-uri> server/comfy-broker`
+7. **Intended image URI**: `us-west1-docker.pkg.dev/wishes-506905/wishes-services/wishes-comfy-broker:<tag>`
+8. **Human deployment command**: `scripts/deploy_comfy_broker.sh`
+9. **Expected Cloud Run config**: private (IAM-gated), 1 CPU / 512Mi, min 0 / max 5, runtime SA `wishes-comfy-broker@wishes-506905.iam.gserviceaccount.com`
+10. **Human `/health` verification**: `TOKEN=$(gcloud auth print-identity-token); curl -H "Authorization: Bearer $TOKEN" https://<broker-url>/health`
+11. **Human `/system-stats` verification**: same header, `GET /system-stats`
+12. **Grant agent invoker**: `gcloud run services add-iam-policy-binding wishes-comfy-broker --region us-west1 --project wishes-506905 --member "serviceAccount:wishes-claude-agent@wishes-506905.iam.gserviceaccount.com" --role roles/run.invoker`
+13. **Verify agent has no secret access**: `gcloud secrets get-iam-policy comfy-cf-access-client-id --project wishes-506905` (repeat for `-client-secret`) — agent SA must not appear
+14. **Example workflow execution**: `COMFY_BROKER_URL=https://<broker-url> python examples/comfyui_generate_example.py examples/workflows/YOUR_WORKFLOW_API.json`
+15. **Remaining assumptions/blockers**: pre-provisioned GCP resources taken as given per the brief, not independently verified (no `gcloud` access used this session); `terraform import` needed for the pre-existing service accounts/secrets/Artifact Registry repo before the human's first `apply`. Claude never accessed real secrets, never deployed, never changed IAM, never ran `terraform apply` — no GCP credentials were configured in this session at all.
