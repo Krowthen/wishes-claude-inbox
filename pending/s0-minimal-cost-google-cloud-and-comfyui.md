@@ -74,15 +74,56 @@ rewrite, unlimited in principle.
 Each `asset_workflow` row declares which provider it targets, not each
 request -- a workflow/model pairing only runs where that model actually
 exists. Provider selection therefore follows from the workflow/version a
-caller selects, not an independent per-request choice. See the
-`comfy update flow` inbox task for the first concrete case: a `v1`
-workflow (`local`, Flux Schnell, negative conditioning is a no-op) and a
-`v2` workflow (`friend_gcp`, Qwen-Image, real positive+negative
-`CLIPTextEncode`, `res_multistep` sampler, turbo LoRA). `wishes_gpu_v3`
-gets its own workflow registrations once it exists.
+caller selects, not an independent per-request choice: the
+`execution_target` persisted on a job is a **derived execution snapshot**
+taken from the workflow that ran, not a free-standing routing parameter
+the caller sets. See the `comfy update flow` inbox task for the first
+concrete case: a `v1` workflow (`local`, Flux Schnell, negative
+conditioning is a no-op) and a `v2` workflow (`friend_gcp`, Qwen-Image,
+real positive+negative `CLIPTextEncode`, `res_multistep` sampler, turbo
+LoRA). `wishes_gpu_v3` gets its own workflow registrations once it
+exists.
 
 Do not add a provider by branching routing code per name. Extend the
 provider registry and the workflow-to-provider binding instead.
+
+## Explicit constraints for this pass (resolve before Phase 1/2 execution)
+
+These narrow several items that were previously left as open decisions.
+Everything else -- exact Cloud SQL sizing, L4 quota, NAT implementation
+detail, Redis networking detail, bucket lifecycle days, exact VM monthly
+cost -- stays deferred to the Terraform/cost plan and comes back at the
+apply gate; do not decide those now.
+
+1. **Canonical project**: treat `wishes-506905` as the canonical S0
+   project. Adopt and preserve the existing `wishes-comfy-broker`,
+   `wishes-comfy-worker`, Artifact Registry (`wishes-services`), and
+   Secret Manager resources via `terraform import` rather than
+   recreating them. Do not create a second project for S0.
+2. **Buckets**: use exactly the four planned shared application buckets
+   (models, workflows, inputs, outputs) -- not per-provider bucket sets.
+   Key layout carries a provider/version prefix
+   (`models/<provider>/...`, `workflows/<provider>/<version>/...`, etc.)
+   so providers never collide in shared storage.
+3. **Cloud SQL**: keep the one-instance/three-database design
+   (`wishes_core`/`wishes_assets`/`wishes_auth`). Do not build an auth
+   runtime and do not expose `wishes_auth` credentials to any existing
+   service (the game app, the asset service) in this pass -- the
+   database exists as an isolation-boundary reservation only.
+4. **Transport**: PostgreSQL remains authoritative and Pub/Sub is
+   request/result transport only. Do not design an always-polling Cloud
+   Run asset worker to drain it -- consumers are push-triggered.
+5. **Operations VM egress**: if the VM needs outbound internet and no
+   simpler approved path exists, its NAT design and cost are an explicit
+   pre-apply approval-package line item, not an assumed default.
+6. **Canon precursor**: before finalizing Phase 1/2, the `wishes-canon`
+   deployment appendices (A, B, C, E on branch `ryancox-chatgpt`) have
+   been updated to reflect the multi-provider ComfyUI model, the
+   adopt-not-recreate project policy, the three-database split, and the
+   four-shared-bucket/prefix convention, so future readers don't hit the
+   same reconciliation gap this task started with. Re-derive Phase 1/2
+   findings against the updated appendices, not the versions originally
+   read.
 
 ## Canonical documentation
 
@@ -291,7 +332,7 @@ No required S0 background task may depend on the VM staying on.
 
 Create S0 VPC/subnet. Use Direct VPC egress for Cloud Run private dependencies where supported.
 
-Create exactly four application buckets:
+Create exactly four application buckets, shared across every registered ComfyUI provider with a provider/version key prefix -- not per-provider bucket sets:
 
 ```text
 <project-id>-wishes-s0-models
