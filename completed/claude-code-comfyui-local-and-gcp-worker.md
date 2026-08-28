@@ -917,3 +917,18 @@ Report:
 17. unresolved assumptions
 
 Do not access, print, or request any Cloudflare credentials.
+
+---
+
+## Completion report (2026-08-28, wishes-game session)
+
+`wishes-comfy-worker` built, tested (107/107), Terraform-validated, and
+Docker-verified in `wishes-game`. Full 10-point report in that repo's
+`docs/claude/todo.md`. Human has since deployed and verified it in production
+at `https://wishes-comfy-worker-910633976836.us-west1.run.app`. A follow-up
+auth-runtime bug found in production (missing `requests` dependency for
+`google.auth.transport.requests`) was fixed separately — see
+`claude-code-comfy-worker-auth-runtime-fix.md` in this same `completed/`
+folder. Moving this task file to `completed/` now to close out a loose end
+left open earlier in the session (deployment was pending human action at the
+time this task was originally worked).

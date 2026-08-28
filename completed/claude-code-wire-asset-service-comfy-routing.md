@@ -718,3 +718,36 @@ Report:
 19. unresolved gaps or assumptions
 
 Do not access, request, print, or persist any Cloudflare credential.
+
+---
+
+## Completion report (2026-08-28, wishes-game session)
+
+`server/asset-service` now dispatches on `execution_target` via a single
+explicit switch (`src/executorRouting.mjs`): `local` → the pre-existing local
+ComfyUI client (unmodified, wrapped in a thin adapter); `friend_gcp` → a new
+Node client/executor calling `wishes-comfy-worker` only (never the broker),
+authenticated with a Google ID token via `google-auth-library`
+(ADC/workload identity, no JSON keys). No inference from URLs, no silent
+fallback — a misconfigured `friend_gcp` job fails the job outright rather
+than quietly running locally (proven live against the running service).
+
+`execution_target` is validated (enum-only, default `local`) on
+`/assets/create` and `/assets/revise` (which inherits the source job's
+target unless overridden); `wishes_asset_reject`'s spawned retry row now
+also inherits it instead of silently resetting to `local`.
+
+77/77 new-or-existing unit/integration test assertions passing across 6 new
+test files plus the pre-existing suite; a static security-regression scan
+confirms the local path never touches Google auth and the remote path never
+touches the broker, Cloudflare, or Secret Manager. `bash reset-db.sh`
+validated the one DB function change cleanly.
+
+No GCP deployment/IAM changed — no Dockerfile/Terraform exists yet for
+`server/asset-service` (recommended future service account name:
+`wishes-asset-service@wishes-506905.iam.gserviceaccount.com`, not created).
+img2img revise is explicitly unsupported on the `friend_gcp` path (the
+worker has no upload endpoint) — documented, and fails with a clear error
+rather than silently degrading.
+
+Full 19-point report in `wishes-game`'s `docs/claude/todo.md`.
