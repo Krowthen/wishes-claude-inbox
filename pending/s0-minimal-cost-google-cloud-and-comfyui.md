@@ -107,7 +107,7 @@ Required topology:
 
 ```text
 one GCP project
-one region, initially us-central1 after validation
+one region, initially us-west1 after validation
 one custom VPC
 one regional subnet
 one Terraform-state bucket
@@ -161,7 +161,7 @@ Stop before apply and present the plan package for approval.
 Required baseline:
 
 ```text
-Name: wishes-s0-usc1-claude-ops
+Name: wishes-s0-usw1-claude-ops
 Compute Engine: e2-standard-2
 CPU: 2 vCPU
 RAM: 8 GiB
