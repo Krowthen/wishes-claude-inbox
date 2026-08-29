@@ -6,6 +6,35 @@ comfyui.md`. Covers current state, decisions made this session, and open
 gaps. Nothing in this session ran `terraform apply`, changed billing/IAM,
 or created cloud resources — this is planning/reconciliation only.
 
+## -1. Update: region migrated to us-central1 (later same day)
+
+`us-west1` was found to lack NVIDIA L4 GPU availability. A new 23-phase
+task, `wishes-s0-us-central1-migration-and-build-plan.md`, moved the
+canonical region to `us-central1` for everything, including the
+already-deployed `wishes-comfy-broker`/`wishes-comfy-worker` — as a
+staged, dual-running cutover (deploy central copies, validate, then
+retire west; never an in-place destroy-and-recreate). Global/project-
+level resources (SAs, secrets, Cloudflare config) don't move.
+
+Done: canon re-updated (new branch `canon/s0-us-central1-migration`, not
+yet merged); the S0 task doc corrected; all 9 existing S0 Terraform
+stacks migrated to `us-central1` (region defaults + `usw1`→`usc1`
+naming, re-validated); two **new** stacks
+(`comfy-broker-central`/`comfy-worker-central`) added for the broker/
+worker migration — deliberately not copies of the existing stacks
+(which would have tried to recreate the project-level SAs/secrets) but
+minimal stacks that reference those identities by variable and create
+only the genuinely new region-scoped pieces (Artifact Registry repo,
+Cloud Run services, one new invoker grant). `git status` confirms the
+existing `us-west1` `comfy-broker`/`comfy-worker` stacks are still
+byte-for-byte untouched. All 11 affected/new stacks: `fmt`/`validate`
+clean. Still no live GCP credentials in this sandbox, so the live
+inventory/quota/pricing check that actually motivated this migration
+(§1 above described `us-west1` as already-deployed and fine — it was
+the *next* live check that would have caught the GPU gap) still needs a
+human to run. Full detail in the same published artifact and
+`docs/claude/todo.md`.
+
 ## 0. Update: canon merged, Terraform written and validated (same day)
 
 The `ryancox-chatgpt` canon branch was squash-merged to `main` (PR #10,
