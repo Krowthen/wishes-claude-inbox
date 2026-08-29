@@ -60,8 +60,9 @@ Known providers at this stage:
 ```text
 local          direct local ComfyUI (loopback, no broker, no cloud auth)
 friend_gcp     wishes-comfy-broker + wishes-comfy-worker relay to a
-               friend's remote ComfyUI behind Cloudflare Access (already
-               deployed)
+               friend's remote ComfyUI behind Cloudflare Access
+               (previously deployed in us-west1, migrating to
+               us-central1 -- see the region-migration update)
 wishes_gpu_v3  Wishes-owned internal ComfyUI on the Cloud Run L4 GPU Job
                built in Phase 7 of this task
 ```
@@ -96,10 +97,14 @@ cost -- stays deferred to the Terraform/cost plan and comes back at the
 apply gate; do not decide those now.
 
 1. **Canonical project**: treat `wishes-506905` as the canonical S0
-   project. Adopt and preserve the existing `wishes-comfy-broker`,
-   `wishes-comfy-worker`, Artifact Registry (`wishes-services`), and
-   Secret Manager resources via `terraform import` rather than
-   recreating them. Do not create a second project for S0.
+   project. Do not create a second project for S0. Preserve global/
+   project-level resources unchanged (service accounts, Secret Manager
+   containers, Cloudflare Access configuration) -- they are not
+   region-scoped. `wishes-comfy-broker`, `wishes-comfy-worker`, and the
+   Artifact Registry repository (`wishes-services`) are region-scoped and
+   are **migrated to `us-central1`** (see the region-migration update
+   below), not imported in place -- `us-west1` was found to lack NVIDIA
+   L4 GPU availability.
 2. **Buckets**: use exactly the four planned shared application buckets
    (models, workflows, inputs, outputs) -- not per-provider bucket sets.
    Key layout carries a provider/version prefix
@@ -117,13 +122,16 @@ apply gate; do not decide those now.
    simpler approved path exists, its NAT design and cost are an explicit
    pre-apply approval-package line item, not an assumed default.
 6. **Canon precursor**: before finalizing Phase 1/2, the `wishes-canon`
-   deployment appendices (A, B, C, E on branch `ryancox-chatgpt`) have
-   been updated to reflect the multi-provider ComfyUI model, the
-   adopt-not-recreate project policy, the three-database split, and the
-   four-shared-bucket/prefix convention, so future readers don't hit the
-   same reconciliation gap this task started with. Re-derive Phase 1/2
-   findings against the updated appendices, not the versions originally
-   read.
+   deployment appendices (A, B, C, E) were updated on branch
+   `ryancox-chatgpt` to reflect the multi-provider ComfyUI model, the
+   project/global-resource preservation policy, the three-database
+   split, and the four-shared-bucket/prefix convention -- that branch has
+   since been squash-merged to `main` (PR #10). A **second** canon
+   update, on a new branch `canon/s0-us-central1-migration` (not yet
+   merged), then moved the canonical region from `us-west1` to
+   `us-central1` and reframed the broker/worker as migrating rather than
+   already-adopted-in-place. Re-derive any further Phase 1/2 findings
+   against `main` plus that pending branch, not an earlier snapshot.
 
 ## Canonical documentation
 
@@ -184,7 +192,7 @@ Required topology:
 
 ```text
 one GCP project
-one region, initially us-west1 after validation
+one region, us-central1 -- us-west1 was found to lack NVIDIA L4 GPU availability
 one custom VPC
 one regional subnet
 one Terraform-state bucket
@@ -239,7 +247,7 @@ Stop before apply and present the plan package for approval.
 Required baseline:
 
 ```text
-Name: wishes-s0-usw1-claude-ops
+Name: wishes-s0-usc1-claude-ops
 Compute Engine: e2-standard-2
 CPU: 2 vCPU
 RAM: 8 GiB
@@ -525,4 +533,4 @@ Then stop for explicit user approval.
 
 ## Definition of done
 
-S0 is complete only when the VM, Remote Control, local/VM messaging, four buckets, `asset` schema, Redis, Pub/Sub, Cloud Run services, private ComfyUI GPU execution (`wishes_gpu_v3`, coexisting with the already-deployed `local`/`friend_gcp` providers), complete asset suite, staleness behavior, budget controls, and destroy/rebuild procedures are implemented and validated, and no required background task depends on the Operations VM remaining powered on. The Phase 7a queue management service is scoped separately and is not required for initial S0 completion.
+S0 is complete only when the VM, Remote Control, local/VM messaging, four buckets, the `wishes_core`/`wishes_assets`/`wishes_auth` databases, Redis, Pub/Sub, Cloud Run services, private ComfyUI GPU execution (`wishes_gpu_v3`, coexisting with `local` and `friend_gcp`), complete asset suite, staleness behavior, budget controls, and destroy/rebuild procedures are implemented and validated in `us-central1`, and no required background task depends on the Operations VM remaining powered on. The Phase 7a queue management service is scoped separately and is not required for initial S0 completion. The `us-west1` broker/worker are retired only after `us-central1` acceptance validation passes -- see `wishes-s0-us-central1-migration-and-build-plan.md`'s Gate 3.
