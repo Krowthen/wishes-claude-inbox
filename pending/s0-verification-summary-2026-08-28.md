@@ -6,6 +6,27 @@ comfyui.md`. Covers current state, decisions made this session, and open
 gaps. Nothing in this session ran `terraform apply`, changed billing/IAM,
 or created cloud resources — this is planning/reconciliation only.
 
+## 0. Update: canon merged, Terraform written and validated (same day)
+
+The `ryancox-chatgpt` canon branch was squash-merged to `main` (PR #10,
+`wishes-canon` commit `86570d3`) — confirmed and the `wishes-game`
+submodule pointer bumped. Nine new Terraform stacks
+(`infrastructure/terraform/s0-{bootstrap,network,data,transport,storage,
+services,comfyui,ops-vm,budget}/`) now represent the full approved S0
+topology, all `terraform fmt`/`validate`-clean. `comfy-broker`/
+`comfy-worker` are provably untouched (`git status` shows zero diff) —
+no `terraform import` was needed for either because both are already
+fully Terraform-managed by their own existing stacks; the new stacks
+never declare resources for them, reading the shared Artifact Registry
+repo via a read-only data source only. Full pre-apply approval package
+(resource inventory, IAM/DB grants, costs with NAT/VM-egress called out
+separately, rollback procedure, exact human commands for the live
+inventory/quota/pricing/plan this sandbox can't run) is in the published
+artifact and `docs/claude/todo.md`. **No live GCP credentials exist in
+this sandbox** (no `gcloud` CLI, no ADC) — confirmed empirically, not
+assumed — so no real `terraform plan`, live inventory, or pricing check
+could run here; still stopped at the approval gate.
+
 ## 1. Current state (verified by reading the repo, not live `gcloud`)
 
 - **GCP project**: `wishes-506905`, region `us-west1`.
