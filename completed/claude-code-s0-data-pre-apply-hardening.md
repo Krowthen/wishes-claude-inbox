@@ -307,3 +307,22 @@ NO GCP resource was created, changed, or destroyed by Claude.
 ```
 
 Stop there. Do not apply `s0-data` or any later S0 stack.
+
+---
+
+## Completion report (2026-08-28)
+
+Human had real live GCP access: `s0-network` applied, an authenticated `terraform plan` for `s0-data` showed `29 to add, 0 to change, 0 to destroy`. Live review found and fixed 4 blockers, all validated in this sandbox:
+
+1. **API ownership** — added `google_project_service` resources for `sqladmin.googleapis.com`/`redis.googleapis.com` (`disable_on_destroy = false`); human must `terraform import` both once.
+2. **Plaintext passwords in state** — replaced managed `random_password` + `password`/`secret_data` with Terraform 1.11 write-only arguments (`password_wo`/`secret_data_wo`) backed by an ephemeral `random_password` resource.
+3. **No executable DB-boundary bootstrap** — added `database/s0-cloud/{01_cluster_ownership_and_connect_grants.sql,02_schema_boundaries_template.sql}` + README, tested for real against a throwaway local Postgres cluster (roles/databases created, grant matrix verified diagonal-true, cross-database CONNECT denial proven, cleaned up afterward).
+4. **`s0-network` outputs typed in by hand** — `s0-data` now reads them via `terraform_remote_state`.
+
+Also fixed opportunistically: `prevent_destroy` on the Cloud SQL instance/databases; `s0-ops-vm` missing the IAP SSH network tag; two missing Secret Manager IAM grants in `s0-services` for the runtime service accounts (discovered while verifying secret boundaries).
+
+All 3 modified stacks (`s0-data`, `s0-services`, `s0-ops-vm`): `terraform fmt`/`validate` clean. Pre-apply artifact republished with the revised resource-count table.
+
+**Claude wrote/tested/documented only. No `terraform apply` was run. No GCP resource was created, changed, or destroyed by Claude.** Full report in `wishes-game`'s git history and session record.
+
+No deploy, no Secret Manager access, no IAM change — zero GCP credentials configured in this sandbox throughout.
