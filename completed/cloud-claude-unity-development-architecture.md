@@ -283,3 +283,16 @@ Use focused commit messages appropriate to the repository. A suggested canon com
 `docs(canon): define cloud Claude and Unity development topology`
 
 Do not merge unrelated work into this task.
+
+---
+
+## Completion report (2026-09-02)
+
+- **Files reviewed**: `docs/canon/drafts/deployment/10-claude-code-operations.md` (primary target), `docs/canon/drafts/deployment/00-architecture-overview.md` (checked for overlap — none found; only a brief §13 VM-role mention, no Unity/Windows content), `docs/canon/CLAUDE.md`, `docs/canon/WORKFLOW.md`, `wishes-canon` repo layout (`canon/` vs `drafts/`).
+- **Files modified**: `docs/canon/drafts/deployment/10-claude-code-operations.md` only — no other file touched, no unrelated work merged in.
+- **Sections added/updated**: new §39 "Development topology: cloud Operations VM, Windows workstation, and future build agents" (§39.1–§39.10 — roles table, Operations VM role/limits, Linux Unity capabilities/limits, Windows workstation role, future Windows build/test agent, future macOS build host, development flow, Claude process separation, source-of-truth/recoverability, unchanged security/authority), old §39 "Primary references" renumbered to §40. Expanded existing §15.3 (`wishes-claude-inbox`) with the canonical external-request flow diagram. Added a "Development topology" subsection to the §38 completion checklist. Frontmatter: `status: draft` → `in-review`, `version: 0.1.0` → `0.2.0`, `last_reviewed` → 2026-09-02.
+- **Canon status**: chapter lives in `drafts/deployment/`, not `canon/` — this was a **draft update, not canonization**. No `.docx` publication build was needed (drafts aren't published). Canonization requires the user to set `status: approved` and explicit go-ahead, then `./scripts/canonize-canon.sh`, per `WORKFLOW.md` — **remaining step, not done here**.
+- **Conflicts with existing deployment canon**: none found — grepped `drafts/deployment/` for Unity/Windows/macOS/build-agent content before writing; this topology was previously undocumented.
+- **Validation run**: `./scripts/validate-canon.sh` on the new branch — 247 errors / 2 warnings, byte-identical count to a `main`-baseline run (diffed); all are pre-existing missing-`.docx`-publication errors for already-canonized documents, none reference this file.
+- **Commit**: `wishes-canon` branch `canon/cloud-claude-unity-development-topology`, commit `9fa3c8c`, pushed to `origin`. **No `gh` CLI available in this sandbox** — a PR was not opened programmatically; compare URL from the push: https://github.com/Krowthen/wishes-canon/pull/new/canon/cloud-claude-unity-development-topology
+- **`wishes-game` submodule pointer**: not bumped — the edit lives on an unmerged branch; `docs/canon` submodule was left checked out at `main` (unchanged, matching origin), per the two-repo workflow (pointer only bumps after merge to `main`).
