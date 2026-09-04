@@ -1,4 +1,4 @@
-# Task: Integrate `claude-local` with the Wishes Agent Control Plane
+# Task: Integrate `claude-local` with Agent Control Platform
 
 Created: 2026-09-04
 Priority: High after gateway deployment
@@ -9,133 +9,128 @@ Allow Edit: true
 
 Depends on:
 - `pending/bootstrap-claude-local-runtime-identity.md`
-- successful completion of `pending/deploy-agent-control-plane-gcp-claude-google.md`
+- successful secure Agent Control deployment from `pending/deploy-agent-control-plane-gcp-claude-google.md`
 
-Reference design:
-- `pending/reference-wishes-multi-agent-control-plane-and-design-room-final-design.md`
+References:
+- `pending/reference-agent-control-platform-revised-approved-design.md`
+- `pending/agent-control-platform-master-deployment-plan.md`
 
 ## Objective
 
-Connect the local Windows Claude Code runtime to the deployed Wishes Agent Control Plane as the canonical agent:
-
-```text
-claude-local
-```
-
-Validate task routing, checkpoint/recovery behavior, local/Unity specialist boundaries, and offline/reconnect behavior without inheriting `claude-google` cloud privileges.
+Enroll the local Windows Claude Code runtime as an independent `agent_instance`, keep all external/provider credentials local, validate secure project/task access, and prove near-real-time push/handoff/reconnect behavior without inheriting `claude-google` privileges.
 
 ## Phase 1 — Verify prerequisites
 
-1. Confirm runtime is the local Windows Claude Code environment and identity instructions already name it `claude-local`.
-2. Review current `CLAUDE.md`, `WORKFLOW.md`, local user-level Claude Code config/memory, and any inbox sync tooling.
-3. Obtain the approved control-plane endpoint/configuration from the Google deployment completion report.
-4. Do not copy secrets from another runtime. Use only the approved Human/local credential provisioning path.
-5. Verify the local machine does not inherit or depend on the Google Operations VM service account.
+1. Confirm this is the local Windows environment and canonical runtime role is `claude-local`.
+2. Review applicable `CLAUDE.md`, `WORKFLOW.md`, local config and inbox tooling.
+3. Obtain only the approved Agent Control endpoint/enrollment procedure.
+4. Never copy credentials from `claude-google` or another user/agent.
+5. Confirm provider/GitHub/local credentials remain local to this machine according to approved local security practice.
 
-## Phase 2 — Configure `wishes-control`
+## Phase 2 — Secure runtime enrollment
 
-Configure the local Claude Code environment to use the deployed `wishes-control` MCP endpoint and any approved A2A/Design Room bridge/runtime configuration needed for local specialist participation.
+Use the approved device/runtime enrollment flow:
+- local bridge generates/uses local private device identity;
+- Human approves/links runtime;
+- platform stores public enrollment identity/metadata;
+- runtime uses short-lived/revocable platform auth;
+- no permanent shared API key;
+- no private key/provider credential is committed or sent to normal Agent Control records.
 
-Requirements:
+Verify revocation/re-enrollment procedure without exposing secret material.
 
-- canonical agent identity is `claude-local`;
-- credentials/config are stored according to approved local security practice;
-- no secret is committed to Git;
-- no permission-bypass mode is introduced;
-- local environment can retrieve project state and its assigned tasks;
-- local environment cannot claim a task exclusively assigned to `claude-google`.
+## Phase 3 — Agent profile/access posture
 
-## Phase 3 — Local task workflow validation
-
-Create/use approved synthetic test tasks to prove:
-
+Validate that Agent Control can represent metadata such as:
 ```text
-1. fresh claude-local session retrieves project state
-2. lists tasks assigned to claude-local
-3. claims an eligible local task
-4. posts progress
-5. creates a checkpoint
-6. registers a branch/commit/test artifact reference
-7. completes the task
-8. sees dependency completion from claude-google work
-9. cannot silently claim a claude-google-only task
+role: claude-local
+capabilities: unity/windows/local-testing
+access: github project repo write (if currently available)
+credential location: local_agent/local_user
+status: available | requires_human | unavailable
+```
+without revealing the actual credential.
+
+If any interactive login is expired, report `requires_human`; do not request another agent's credential.
+
+## Phase 4 — MCP/task authorization
+
+Prove from fresh session:
+- list only authorized projects/spaces;
+- retrieve own/shared project state;
+- list/claim eligible local tasks;
+- cannot read private workspace/project state without membership;
+- cannot claim `claude-google`/other-user-only task;
+- create progress/checkpoint/artifact/feedback within authorization.
+
+## Phase 5 — Live push runtime bridge
+
+Configure approved outbound TLS live bridge and subscriptions.
+
+Prove:
+1. local runtime receives an assigned/claimable test event without Human saying "check for updates";
+2. acknowledgement/cursor is recorded;
+3. runtime receives a structured handoff from another agent;
+4. task/event is project scoped;
+5. no Redis/DB direct connectivity exists from the workstation.
+
+## Phase 6 — Offline/reconnect replay
+
+With Human coordination:
+1. disconnect/stop the local bridge;
+2. queue one or more authorized events/tasks;
+3. verify durable state remains;
+4. reconnect;
+5. replay only outstanding events in correct logical order;
+6. verify cancelled/reassigned/stale work is revalidated before execution;
+7. continue without previous chat memory.
+
+Do not unexpectedly power off the workstation.
+
+## Phase 7 — Cloud/local handoff
+
+Prove:
+```text
+claude-google completes/updates task
+ -> emits handoff/dependency event
+ -> claude-local receives push
+ -> pulls referenced branch/commit where authorized
+ -> performs Windows/Unity/local validation
+ -> returns result/feedback
+ -> PM/workflow advances automatically
 ```
 
-## Phase 4 — Unity/Windows specialist boundary
+Use harmless synthetic work if no real feature is ready.
 
-Validate/document how the runtime is invited to Design Rooms only when client/local expertise is required.
+## Phase 8 — Design Room specialist behavior
 
-Expected specialist areas:
+Validate optional participation for Unity/Windows/client concerns, including `CLIENT_SIGNOFF`, `APPROVE_WITH_NOTES`, or `BLOCK` if supported.
 
-- Unity Editor;
-- Play Mode;
-- Windows-specific behavior;
-- graphical debugging;
-- rendering/animation/visual QA;
-- input/gameplay testing;
-- client performance;
-- local ComfyUI where relevant;
-- local developer tooling.
-
-Demonstrate a synthetic Design Room interaction in which `claude-local` can:
-
-- read the room context;
-- post a client/local risk or validation comment;
-- issue `CLIENT_SIGNOFF`, `APPROVE_WITH_NOTES`, or `BLOCK` where the protocol supports it;
-- leave unrelated backend-only Design Rooms unclaimed/unmodified.
-
-## Phase 5 — Cloud-created branch validation
-
-Prove the intended handoff flow:
-
-```text
-claude-google completes backend/cloud task
- -> checkpoint/commit recorded
- -> dependent task becomes ready for claude-local
- -> claude-local pulls the referenced branch/commit
- -> performs Windows/Unity validation as applicable
- -> returns structured result through the Control Plane
-```
-
-Use harmless/synthetic validation if no real Unity change is ready at the time of setup.
-
-## Phase 6 — Offline/reconnect test
-
-Validate:
-
-1. leave/create a task assigned to `claude-local` while the local runtime is offline;
-2. verify the task remains durable and assigned;
-3. verify `claude-google` does not silently steal it;
-4. reconnect/start a fresh local Claude Code session;
-5. retrieve the queued task and current project state;
-6. continue without needing the prior local chat/session memory.
-
-Coordinate the offline portion with the Human; do not power off or disrupt the workstation unexpectedly.
+Design Room participation must not grant implementation authority by itself.
 
 ## Non-goals
 
-Do not in this task:
+Do not:
+- alter GCP IAM/cloud infrastructure;
+- import Google VM credentials;
+- store provider/GitHub secrets centrally;
+- consume unauthorized project/user work;
+- expose local private keys;
+- retire inbox before full acceptance.
 
-- alter GCP IAM;
-- deploy/modify Cloud Run or Cloud SQL;
-- assume Google VM credentials;
-- implement backend gateway functionality already owned by `claude-google`;
-- consume tasks assigned to `claude-google`;
-- make local specialist participation mandatory for every Design Room;
-- retire the Claude inbox before overall acceptance.
-
-## Required completion report
+## Completion Report
 
 Report:
-
-- confirmed local runtime identity;
-- files/configuration changed (without secrets);
-- control-plane connectivity result;
-- MCP/A2A capabilities available to local runtime;
-- task routing test results;
-- Design Room specialist test results;
-- cloud-to-local branch handoff test results;
-- offline/reconnect test results;
-- any Windows/Unity-specific limitation;
-- branch/commit SHA(s) for repository changes;
-- any Human follow-up required.
+- runtime identity/profile name;
+- enrollment method/config files changed without secrets;
+- platform connectivity;
+- project/task authorization tests;
+- capability/access metadata behavior;
+- `requires_human` behavior;
+- live push/handoff tests;
+- offline replay tests;
+- cloud-to-local validation;
+- Design Room specialist test;
+- revocation/re-enrollment result;
+- commits/SHAs;
+- Human follow-up required.
