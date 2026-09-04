@@ -1,4 +1,4 @@
-# Task: Build Wishes Agent Control Plane Foundation
+# Task: Build Agent Control Platform Foundation
 
 Created: 2026-09-04
 Priority: High
@@ -9,222 +9,213 @@ Allow Edit: true
 
 Depends on:
 - `pending/bootstrap-claude-google-runtime-identity.md`
+- `pending/agent-control-step-02-security-domain-reconciliation-claude-google.md`
+- Human approval of Step 03 dedicated-domain placement where required
+- Step 04 threat-model/security architecture review
 
-Reference design:
-- `pending/reference-wishes-multi-agent-control-plane-and-design-room-final-design.md`
+References:
+- `pending/reference-agent-control-platform-revised-approved-design.md`
+- `pending/agent-control-platform-master-deployment-plan.md`
 
 ## Objective
 
-Begin implementation of the approved Wishes Multi-Agent Control Plane by grounding the design in the live repository/GCP state, creating the durable `wishes_ops` data model and role boundary, and building the initial Agent Gateway application foundation.
+Build the durable foundation of the independent multi-user/multi-project `agent-control` domain. Do not continue the superseded `wishes_ops` design.
 
-This task intentionally stops before live cost-bearing/destructive GCP apply unless an existing approved workflow explicitly authorizes the specific apply and the Human has approved the gate.
+The foundation must support organizations/users/workspaces/projects/project spaces, securely linked/named agents, project AI teams/PM assignment, workflows/tasks/claims, Design Rooms, live-agent session metadata, approvals/audit and credential capability metadata without storing external credential values.
 
-## Phase 1 — Verify current reality
+## Phase 1 — Reconcile Step 02-04 outputs
 
-Before editing:
+1. Confirm `claude-google` runtime identity.
+2. Review Step 02 completion report and any Human Step 03 placement decision.
+3. Review threat model/security architecture from Step 04.
+4. Inspect any implementation already started and merge/rework rather than blindly overwriting.
+5. Stop and report if any unresolved security BLOCK remains.
 
-1. Confirm runtime identity is `claude-google` and this is the Google Operations VM.
-2. Review current repository instructions including all applicable `CLAUDE.md` and `WORKFLOW.md` files.
-3. Review the current Wishes deployment/canon material relevant to:
-   - Claude Code Operations VM;
-   - Cloud SQL/data boundaries;
-   - Redis/Memorystore;
-   - Cloud Run;
-   - IAM/service-account boundaries;
-   - Terraform state/layout;
-   - production apply authority;
-   - Claude inbox workflow.
-4. Inventory the actual implementation repository structure and identify where server services, database migrations, Terraform, and tests currently live.
-5. From the authorized Google environment, inventory relevant live S0 resources where credentials permit, without changing them.
-6. Confirm whether the planned S0 Cloud SQL instance/Redis resources are actually deployed yet. Do not assume planning documents equal live state.
-7. Produce a short implementation-delta note in the task completion report identifying any material difference between the approved design and current repository/cloud state.
+## Phase 2 — Independent repository/domain structure
 
-## Phase 2 — Branch and implementation structure
+Use the approved dedicated repository/domain placement. If the dedicated repository cannot yet be provisioned, use only the explicitly approved isolated bootstrap location and include an extraction plan.
 
-Create a focused implementation branch according to repository workflow. Preferred logical branch name if not conflicting with repository rules:
-
+Logical modules may include:
 ```text
-feature/agent-control-plane
+agent-control/
+  gateway/
+  workflow-engine/
+  runtime-bridge/
+  mcp/
+  a2a/
+  integrations/
+  database/
+  terraform/
+  docs/
 ```
 
-Do not implement directly on `main` unless the repository explicitly requires that workflow and report why.
+## Phase 3 — Dedicated `agent_control` database model
 
-Identify/establish the minimum implementation areas. The approved design suggests the following logical structure, but adapt to the actual repository rather than duplicating existing service frameworks:
+Do not create `wishes_ops`.
 
+Implement migrations/schema for at least:
 ```text
-services/agent-gateway/
-database/migrations/.../wishes_ops/
-infrastructure/terraform/.../agent-control-plane/
-scripts/agentctl/
-```
-
-Do not create duplicate application frameworks if an existing service shell is the correct home.
-
-## Phase 3 — `wishes_ops` durable schema design and migrations
-
-Implement the approved operational domain with a dedicated database boundary:
-
-```text
-wishes_ops
-```
-
-Target roles:
-
-```text
-wishes_ops_owner
-wishes_ops_runtime
-wishes_ops_auditor
-```
-
-The schema must support at least:
-
-```text
-agent_identity
-agent_session
-agent_task
-agent_execution
-agent_checkpoint
-agent_artifact
-agent_approval
+organization
+user_identity
+organization_member
+workspace
+workspace_member
+project
+project_member
+project_space
+project_repository
+project_environment
+project_policy
+project_control_document
+project_control_document_version
+agent_provider
+agent_connection
+agent_profile
+agent_instance
+agent_role_definition
+agent_capability
+agent_access_claim
+project_agent_assignment
+workflow_template
+workflow_step
+workflow_transition
+workflow_run
+task
+task_dependency
+task_assignment
+task_claim
+task_update
+feedback
 agent_conversation
 agent_conversation_participant
 agent_chat_message
 agent_proposal
 agent_decision
+agent_signoff
+agent_live_session
+agent_subscription
+agent_event
+agent_handoff
+agent_event_cursor
+agent_execution
+agent_checkpoint
+agent_artifact
+agent_approval
+integration_provider
+integration_connection
+project_integration
+external_work_item
+activity_event
+outbox_event
+idempotency_record
 ```
 
 Requirements:
+- UUID/durable IDs per repository convention;
+- typed organization/workspace/project ownership columns;
+- deny cross-tenant access by design;
+- use RLS where practical in addition to service authorization;
+- no cross-database FK to Wishes/project databases;
+- provider-specific metadata may use JSON, primary authz boundaries may not;
+- design messages are distinct from Decisions/Tasks;
+- Human approvals are explicit durable records;
+- claims/event processing are concurrency/idempotency safe.
 
-- use UUIDs or the repository's established durable identifier convention;
-- include timestamps/status fields and foreign-key constraints where valid within `wishes_ops`;
-- avoid cross-database foreign keys to `wishes_core`, `wishes_assets`, or `wishes_auth`;
-- repository/commit/artifact references are references/snapshots, not foreign keys into GitHub;
-- task assignment must support canonical agent IDs;
-- durable state must survive Redis loss;
-- design-room messages/proposals/decisions must be distinguishable from authoritative implementation tasks;
-- Human approvals must be explicit durable records;
-- include idempotency/concurrency considerations for task claims and event processing;
-- use JSON only where flexibility is justified; retain query-critical status/ownership fields as normal typed columns.
+## Phase 4 — Credential-safe agent model
 
-Canonical identities to seed/register at the logical layer:
-
+Implement metadata only:
 ```text
-human-owner
-chatgpt-director
-claude-coop
-claude-google
-claude-local
-openai-director  # optional/inactive until configured
+credential_location_class:
+  none
+  local_user
+  local_agent
+  human_interactive
+  external_provider
+  secret_manager_service_integration
 ```
 
-Do not create credentials for `openai-director` merely by creating its logical identity.
+`agent_access_claim` may record resource/scope/access level/availability/last verification/Human-intervention requirement.
 
-## Phase 4 — Migration convention reconciliation
+Never create columns/API payloads intended to store raw GitHub tokens, Google ADC material, Claude/OpenAI credentials, passwords, private keys or refresh tokens.
 
-The existing S0 work previously identified multi-database migration conventions as a design gap. Before adding a new database migration path:
+When a server connector requires a secret, model an opaque secret reference only.
 
-1. inspect what has changed since that gap was recorded;
-2. use the current repository's established convention if one now exists;
-3. if still unresolved, implement the smallest coherent convention that can support `wishes_ops` without breaking the existing databases;
-4. document the convention and its ordering/runner behavior;
-5. do not perform a live database migration until the required Human approval/data gate is satisfied.
+## Phase 5 — Human/agent principal separation
 
-## Phase 5 — Agent Gateway application foundation
+Build distinct principal concepts for:
+- Human authenticated users;
+- enrolled agent runtime/device instances;
+- server service identities.
 
-Build the internal application/service layer for:
+Agent runtime enrollment uses public/device identity + short-lived platform credentials; private key/provider credentials remain local.
 
-- agent identity lookup;
-- task create/read/list;
-- assign/claim with concurrency protection;
-- status transitions;
-- checkpoints;
-- artifact references;
-- approval request/read/resolve state;
-- Design Room create/read/list;
-- participant registration;
-- durable chat messages;
-- proposal persistence;
-- decision persistence/promotion boundary.
+## Phase 6 — Gateway internal domain layer
 
-At this stage, prioritize a clean internal service/API layer and tests. MCP/A2A protocol exposure is handled in the dependent protocol task.
+Implement/test internal services for:
+- organizations/workspaces/projects/membership;
+- project spaces and policies;
+- project agent attachment and PM assignment;
+- agent profiles/capabilities/access claims;
+- workflows;
+- task create/read/assign/claim/state/dependencies;
+- checkpoints/artifacts/feedback;
+- approvals;
+- Project Control Document generation state;
+- Design Room/proposal/decision/signoff state;
+- live session/subscription/handoff metadata;
+- audit/outbox/idempotency.
 
-## Phase 6 — Authority and state-machine rules
+MCP/A2A/live-transport protocol exposure remains in dependent tasks.
 
-Implement and test at least these rules:
+## Phase 7 — Core security/state rules
 
-1. A task assigned to `claude-local` cannot be silently claimed by `claude-google`.
-2. A task assigned to `claude-google` cannot be silently claimed by `claude-local`.
-3. Reassignment requires authorized control-plane action.
-4. Design Room messages do not automatically create executable work.
-5. Proposal -> Decision is explicit.
-6. Decision -> Task is explicit.
-7. Human-gated approval cannot be satisfied by an arbitrary agent message.
-8. Completed/failed execution records retain their task relationship.
-9. A fresh session can recover unfinished work from durable state.
-10. Redis is not required to reconstruct authoritative task/conversation state.
+Test at least:
+1. User A cannot read/write User B personal workspace without membership/share.
+2. Project A context cannot leak into Project B.
+3. Agent attached to one project cannot claim another project's task without permission.
+4. Personal workflow cannot weaken project policy.
+5. PM AI cannot grant itself external access or bypass Human approval.
+6. Agent access claims contain no credential values.
+7. `requires_human` blocks execution when interactive access is unavailable.
+8. Another agent cannot satisfy missing access by supplying credentials.
+9. Design Room message -> Decision -> Task requires explicit promotion.
+10. Human approval cannot be forged by AI message.
+11. Durable state reconstructs without Redis/live transport.
 
-## Phase 7 — Tests
+## Approval Gates
 
-Add tests for:
+### Database/live infrastructure gate
+Before any live DB/IAM/cost-bearing apply, provide Human:
+- exact schema/migration list;
+- tenant/RLS/authz design;
+- DB roles/grants;
+- dedicated-domain placement;
+- cost plan;
+- rollback;
+- confirmation of credential non-storage.
 
-- schema constraints;
-- task state transitions;
-- concurrent claim handling;
-- identity/assignment boundaries;
-- proposal/decision/task separation;
-- approval boundary;
-- checkpoint recovery;
-- artifact registration;
-- Design Room message ordering/threading basics;
-- durable reconstruction without Redis.
-
-Run all repository-required formatting/lint/test validation.
-
-## Approval gates
-
-### Gate A — before any live Cloud SQL/database mutation
-
-Provide:
-
-- proposed migration list;
-- database/role grants;
-- plan/output showing intended changes;
-- rollback/recovery approach;
-- confirmation of no cross-database credential broadening.
-
-Do not cross this gate without Human approval where required by existing Wishes deployment policy.
-
-### Gate B — before any new cost-bearing GCP resource
-
-Do not create Cloud Run/Memorystore/Cloud SQL/NAT or other cost-bearing resources in this foundation task without the explicit required approval.
+No live apply without required approval.
 
 ## Non-goals
 
-Do not in this task:
+Do not:
+- deploy live MCP/A2A/live bridge;
+- store or move external credentials;
+- expose arbitrary shell execution;
+- reuse Wishes application DB by default;
+- retire Claude inbox;
+- expand production authority.
 
-- implement unrestricted shell execution;
-- deploy A2A/MCP endpoints to production;
-- configure ChatGPT credentials;
-- configure Claude Local;
-- retire the Claude inbox;
-- grant broad production roles to the Operations VM;
-- treat Design Room consensus as implementation authorization;
-- canonize architecture before implementation acceptance.
-
-## Required completion report
+## Completion Report
 
 Report:
-
-- runtime/environment confirmation;
-- repositories/files reviewed;
-- live-state observations available from the authorized VM;
-- implementation delta from the approved reference design;
-- branch name;
-- files created/modified;
-- `wishes_ops` migration/schema design;
-- role/grant design;
-- gateway modules implemented;
-- tests/validation and results;
-- commits pushed and SHA(s);
-- any Human approval gate reached;
-- exact next work unblocked for `build-agent-control-plane-mcp-a2a-claude-google.md`.
+- Step 02-04 inputs used;
+- repository/domain placement;
+- schema and security design;
+- credential metadata model;
+- gateway modules;
+- RLS/authz tests;
+- unit/integration test results;
+- commits/SHAs;
+- Human gate status;
+- readiness for MCP/A2A/live communication task.
