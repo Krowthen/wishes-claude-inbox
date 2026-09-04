@@ -126,3 +126,68 @@ Produce a completion report with:
 - whether it is safe to proceed to Step 03.
 
 Hard stop: no Cloud SQL migration, new GCP project/resource creation, IAM mutation, Secret Manager write, credential movement or deployment apply in Step 02.
+
+---
+
+## Completion report (2026-09-04)
+
+Full report: `wishes-game`'s `docs/claude/agent-control-step-02-security-
+domain-reconciliation.md`, branch `claude-google/step-02-security-domain-
+reconciliation`, PR https://github.com/Krowthen/wishes-game/pull/3
+(not merged — left for Human review).
+
+**Current implementation state:** none. Searched all three repos
+(tracked files, all branches) for `wishes_ops`, `wishes-agent-gateway`,
+agent-control schemas/migrations, MCP/A2A code, agent identity/
+workspace/project models, live event/bridge work — zero hits outside
+the inbox task/reference documents themselves. Genuine greenfield.
+
+**Current live-state observations:** attempted read-only inventory of
+Cloud SQL, Redis, Pub/Sub, Cloud Run, Secret Manager, IAM service
+accounts, compute networks/instances, and project IAM policy via
+`gcloud`, all as `wishes-s0-claude-ops-host@wishes-506905.iam.
+gserviceaccount.com`. **Every call returned `PERMISSION_DENIED`**,
+including reading the Terraform remote-state GCS bucket. The service
+account has broad `cloud-platform` OAuth scope but an IAM role too
+narrow for any of this. Only ground truth available from this runtime:
+local `s0-bootstrap` Terraform state (2 resources: the resourcemanager
+API enablement + the tfstate bucket itself) and the Human's own prior
+documented `s0-data` pre-apply review in `docs/claude/todo.md`
+(`s0-network` applied, `s0-data` plan showed 29-to-add). **A genuine
+live-infrastructure inventory is not achievable from `claude-google`'s
+current permissions** — this needs a Human decision: do the inventory
+steps directly, or grant `claude-google` a deliberate, narrow, read-only
+IAM role.
+
+**Deltas from revised architecture:** none in code. One doc delta (see
+"old tasks/files needing amendment" below).
+
+**Security BLOCKs:** none — nothing exists yet to violate the
+non-negotiable rules list.
+
+**Recommended separate-domain placement (input to Step 03, not
+applied):** the revised design's own §2/§21 already state a preference
+— dedicated GCP project (distinct from `wishes-506905`) and dedicated
+repository (not `wishes-game`), since "Wishes is the first registered
+project, not the platform boundary." Carried forward as input; the
+actual placement decision belongs to Step 03 + Human approval.
+
+**Cost-bearing components requiring Human approval:** everything from
+Step 03 onward that creates a new GCP project, Cloud SQL instance,
+event transport, or Cloud Run service. Nothing cost-bearing created in
+Step 02.
+
+**Exact old tasks/files needing amendment:** `pending/canonize-agent-
+control-plane-after-acceptance-claude-google.md`, lines 26 and 39 —
+still literally instructs documenting a `wishes_ops` boundary as real,
+unlike the rest of this batch (already updated to treat it as
+superseded). Not amended in this step — out of scope for Step 02, far
+downstream (gated on end-to-end acceptance), flagged for whoever next
+revises that file.
+
+**Safe to proceed to Step 03:** yes, with the live-infrastructure-
+inventory caveat above carried forward as an open question rather than
+resolved.
+
+Awaiting the Human's go-ahead before starting Step 03
+(`agent-control-step-03-domain-placement-claude-google.md`).
