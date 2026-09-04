@@ -17,60 +17,100 @@ Completed:
 1. `completed/bootstrap-claude-google-runtime-identity.md`
 2. `completed/agent-control-step-02-security-domain-reconciliation-claude-google.md`
 
-Step 02 proved that the current Operations VM host identity is too narrow for live GCP inventory or management.
+The Human has now completed the GCP bootstrap needed to resolve the Step 02 live-inventory blocker.
 
-The Human has now resolved both open decisions:
+Approved S0 placement:
 
-- S0 Agent Control placement is approved inside `wishes-506905`, region `us-central1`, while preserving an independent `agent_control` domain/database/IAM boundary.
-- `claude-google` is approved for standing normal Wishes GCP management through a dedicated short-lived impersonated management identity.
+```text
+project: wishes-506905
+region: us-central1
+domain: agent_control
+```
 
-Authoritative decision:
+`agent_control` remains an independent bounded platform domain/database/service/IAM boundary even though it is co-located in the Wishes GCP project for S0.
 
-- `pending/decision-s0-agent-control-placement-and-claude-google-management-authority.md`
+Approved management identity:
+
+```text
+wishes-claude-google-admin@wishes-506905.iam.gserviceaccount.com
+```
+
+Weak Operations VM host identity:
+
+```text
+wishes-s0-claude-ops-host@wishes-506905.iam.gserviceaccount.com
+```
+
+The host identity may impersonate the management identity with short-lived credentials. No static service-account keys.
 
 ## Execute next — do not skip
 
-1. Execute `pending/elevate-claude-google-gcp-management-and-confirm-control-plane-placement.md` immediately.
-2. Derive the concrete least-privilege role matrix and authoritative Terraform for the dedicated `claude-google` management identity.
-3. If the current host identity cannot perform the bootstrap, return the exact minimal one-time Human command(s) needed. Do not request credential transfer.
-4. Stop before the first durable IAM-elevation apply and present the exact role matrix/Terraform plan for Human confirmation.
-5. After that confirmation, apply and validate short-lived impersonation.
-6. Re-run the live GCP inventory that Step 02 could not perform.
-7. Continue to the revised Step 03 placement task using the approved same-project S0 decision.
+Execute this task immediately:
 
-Queued after management bootstrap:
+```text
+pending/claude-google-resume-live-gcp-and-agent-control.md
+```
 
-- `pending/agent-control-step-03-domain-placement-claude-google.md`
-- `pending/agent-control-step-04-threat-model-security-claude-google.md`
+That task supersedes the manual copy/paste handoff for the current GCP bootstrap stage.
+
+It requires you to:
+
+- validate VM-side management-identity impersonation;
+- re-run complete live GCP inventory;
+- verify bucket and runtime-service-account resource-scoped access;
+- reconcile Terraform and live state before apply;
+- evaluate Cloud Build only if actually required;
+- document any exact remaining permission gaps;
+- update `claude-google` operating instructions/wrappers for explicit impersonation;
+- resume Agent Control Platform deployment after reconciliation.
+
+Do not repeat the already-completed Human bootstrap unless verification proves a specific binding is missing.
+
+## Queued after live GCP reconciliation
+
+Continue the approved Agent Control sequence using:
+
+```text
+pending/agent-control-step-03-domain-placement-claude-google.md
+pending/agent-control-step-04-threat-model-security-claude-google.md
+pending/agent-control-platform-master-deployment-plan.md
+```
+
+Step 03 must use the already-approved same-project S0 decision rather than reopening whether a separate GCP project should be created.
 
 ## Current architecture authority
 
 Use together:
 
-- `pending/reference-agent-control-platform-revised-approved-design.md`
-- `pending/agent-control-platform-master-deployment-plan.md`
-- `pending/decision-s0-agent-control-placement-and-claude-google-management-authority.md`
+```text
+pending/reference-agent-control-platform-revised-approved-design.md
+pending/agent-control-platform-master-deployment-plan.md
+pending/decision-s0-agent-control-placement-and-claude-google-management-authority.md
+pending/claude-google-resume-live-gcp-and-agent-control.md
+```
 
-Interpret the revised platform design as follows for S0:
+Interpretation for S0:
 
-- `agent_control` remains an independent multi-user/multi-project platform domain.
-- S0 hosting is co-located in GCP project `wishes-506905` by explicit Human approval.
-- Do not resurrect the obsolete Wishes-specific `wishes_ops` schema/database model.
-- Do not create a separate GCP project solely for S0 Agent Control.
-- Preserve independent database/service/IAM boundaries so later extraction to a dedicated project remains possible.
+- `agent_control` remains independent from Wishes application databases;
+- host in `wishes-506905` by Human approval;
+- do not revive `wishes_ops`;
+- do not create a separate GCP project solely for S0 Agent Control;
+- preserve independent database/service/IAM boundaries and future extractability.
 
-## Credential rule
+## Credential / security rule
 
-Do not copy or centralize provider/user credentials. Record capabilities/access claims and credential location only. Actual provider credentials remain local to the runtime/user unless a separately approved server-side integration explicitly requires a managed secret reference.
+Do not copy or centralize provider/user credentials. GCP privileged operations use short-lived service-account impersonation. Do not create static service-account JSON keys.
 
-The GCP management model uses short-lived service-account impersonation; do not create static service-account JSON keys.
+Do not independently grant Owner/Editor, Project IAM Admin, Service Account Key Admin, blanket Secret Accessor, or broader organization/folder authority.
+
+Do not cross retained Human destructive/security gates.
 
 ## Completion handling
 
-For each completed task:
+For completed work:
 
 - append the required completion report;
-- move/promote the task according to the existing inbox workflow;
+- move/promote completed tasks according to inbox workflow;
 - record branch/commit references;
 - do not consume `claude-local` tasks;
-- do not cross retained Human destructive/security gates.
+- advance the Agent Control deployment only after live GCP/Terraform reconciliation is complete.
