@@ -86,7 +86,7 @@ Evaluate, do not blindly assume, at least:
 - `roles/redis.admin`
 - `roles/pubsub.admin`
 - `roles/artifactregistry.admin`
-- `roles/secretmanager.admin` (container/metadata/version management; do not add blanket Secret Accessor)
+- `roles/secretmanager.editor` for Secret Manager create/update/version management without payload access; keep `roles/secretmanager.viewer` as needed for metadata inspection
 - `roles/serviceusage.serviceUsageAdmin`
 - `roles/logging.admin`
 - `roles/monitoring.admin`
@@ -94,7 +94,7 @@ Evaluate, do not blindly assume, at least:
 - Cloud Build role(s) only if builds are executed through Cloud Build
 - storage roles scoped to the actual Terraform-state/application buckets where feasible
 
-Do not include `roles/owner`, `roles/editor`, `roles/resourcemanager.projectIamAdmin`, `roles/iam.serviceAccountKeyAdmin`, or blanket `roles/secretmanager.secretAccessor` in standing authority without a new explicit Human approval.
+Do not include `roles/secretmanager.admin` in standing authority because that predefined role includes `secretmanager.versions.access` and therefore can read secret payloads. Do not include `roles/owner`, `roles/editor`, `roles/resourcemanager.projectIamAdmin`, `roles/iam.serviceAccountKeyAdmin`, or blanket `roles/secretmanager.secretAccessor` in standing authority without a new explicit Human approval.
 
 ## Completion output
 
