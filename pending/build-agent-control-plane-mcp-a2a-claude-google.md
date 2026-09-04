@@ -1,4 +1,4 @@
-# Task: Build Wishes Agent MCP, A2A, Redis Coordination, and Design Room Layer
+# Task: Build Agent Control MCP, A2A, Live Sessions, and Event Layer
 
 Created: 2026-09-04
 Priority: High
@@ -8,260 +8,235 @@ Execution Environment: Google Cloud Claude Code Operations VM
 Allow Edit: true
 
 Depends on:
-- `pending/bootstrap-claude-google-runtime-identity.md`
 - `pending/build-agent-control-plane-foundation-claude-google.md`
 
-Reference design:
-- `pending/reference-wishes-multi-agent-control-plane-and-design-room-final-design.md`
+References:
+- `pending/reference-agent-control-platform-revised-approved-design.md`
+- `pending/agent-control-platform-master-deployment-plan.md`
 
 ## Objective
 
-Extend the durable Agent Gateway foundation with:
+Extend the independent `agent-control` foundation with:
+1. durable outbox/idempotency + transient event dispatch;
+2. MCP agent-to-platform interface;
+3. A2A/Design Room adapter;
+4. authenticated push-based Live Agent Sessions;
+5. runtime subscriptions/handoffs/offline replay;
+6. security boundaries that expose capabilities/access posture but never external credential values.
 
-1. transient Redis/event coordination;
-2. the `wishes-control` MCP interface for AI -> Wishes control-plane access;
-3. the A2A/Design Room interface for structured AI -> AI design collaboration;
-4. role-specific authorization and sign-off semantics;
-5. safe conversation limits and durable recovery.
+Do not build a second task/conversation database and do not expose project credentials through protocol payloads.
 
-This task must reuse the same internal service/domain layer and `wishes_ops` records created by the foundation task. Do not build a second parallel task or conversation system.
+## Phase 1 — Foundation reconciliation
 
-## Phase 1 — Reconcile foundation state
+Confirm:
+- `claude-google` identity;
+- current foundation commit/tests;
+- dedicated `agent_control` database/domain model;
+- no unresolved security BLOCK;
+- no live resource assumption without inventory/approval.
 
-Before editing:
+## Phase 2 — Durable outbox and transient event dispatch
 
-1. confirm `claude-google` runtime identity;
-2. review the completion report/commits from the foundation task;
-3. verify schema, state-machine, and service-layer tests pass;
-4. identify any unresolved Human approval gate and do not bypass it;
-5. confirm actual Redis/Memorystore deployment state before assuming a live Redis endpoint exists.
+Implement durable `outbox_event` + `idempotency_record` behavior and transient dispatch through the approved event transport.
 
-## Phase 2 — Redis/outbox coordination
-
-Implement transient event coordination using the repository's existing Redis/event conventions where they exist.
-
-Logical event categories must cover at least:
-
+Events cover:
 ```text
-agent task changed
-agent assignment changed
-agent checkpoint created
-agent approval requested/resolved
-Design Room message created
-Design Room waiting-agent state
-Design Room resolved
-proposal promoted
-decision created
-```
-
-Suggested logical streams/channels:
-
-```text
-wishes.agent.tasks.chatgpt
-wishes.agent.tasks.claude-google
-wishes.agent.tasks.claude-local
-wishes.agent.events
-wishes.agent.messages
-wishes.agent.approvals
-wishes.agent.chat
-wishes.agent.chat.turn
-wishes.agent.chat.waiting
-wishes.agent.chat.completed
+task.created/changed/assigned/claimable
+checkpoint.created
+approval.requested/resolved
+feedback.created
+agent.online/offline
+access.requires_human
+design.message/proposal/signoff/resolved
+code.ready_for_test
+test.failed/test.passed
+handoff.created/accepted/completed
+workflow.transition
 ```
 
 Requirements:
+- PostgreSQL is authoritative;
+- transient transport loss cannot lose committed work;
+- duplicate delivery cannot duplicate durable effects;
+- every event is org/workspace/project scoped;
+- event payloads contain no provider credentials;
+- offline consumers can resume by durable cursor/checkpoint.
 
-- PostgreSQL remains authoritative;
-- Redis loss/flush must not lose tasks, approvals, conversations, proposals, or decisions;
-- use outbox/idempotency/reconciliation appropriate to current Wishes architecture;
-- every event must reference durable IDs;
-- consumer retry must not duplicate durable effects;
-- do not introduce an always-on polling worker if the existing S0 transport/cost design prohibits it.
+## Phase 3 — MCP interface
 
-## Phase 3 — MCP server: `wishes-control`
-
-Expose the control-plane functions over MCP using the existing domain/service layer.
-
-Initial tool surface should include, where supported by authorization:
-
+Expose authorized tools such as:
 ```text
 get_project_state
 get_agent_status
-list_tasks
-get_task
-create_task
-assign_task
-claim_task
-post_message
-report_progress
-create_checkpoint
-register_artifact
-complete_task
-request_review
-request_approval
-list_approvals
-resolve_approval
-list_design_rooms
-get_design_room
-post_design_message
-create_proposal
-promote_proposal
+list_projects
+list_tasks/get_task/create_task/assign_task/claim_task
+post_update/post_feedback
+create_checkpoint/register_artifact/complete_task
+request_review/request_approval/list_approvals/resolve_approval
+list_design_rooms/get_design_room/post_design_message
+create_proposal/promote_proposal
+get_agent_capabilities/get_agent_access_posture
+request_human_intervention
 ```
 
 Requirements:
+- deny by default;
+- tenant/project authorization on every tool;
+- no generic arbitrary shell execution;
+- no returned credential/token/private-key values;
+- access posture returns metadata only (`available`, `requires_human`, `unavailable`, local/server-reference class);
+- stable IDs/idempotency where practical.
 
-- tool authorization is role-aware;
-- no MCP tool is a generic arbitrary shell executor;
-- no MCP tool grants cloud/database authority beyond the caller's role;
-- sensitive credentials are never returned through normal task/project-state tools;
-- project-state responses should be compact enough for fresh AI sessions while retaining references to retrieve deeper detail;
-- tools should be idempotent where practical and return stable durable IDs.
+## Phase 4 — A2A / Design Room
 
-## Phase 4 — A2A / Design Room adapter
+Implement durable Design Room collaboration using the same domain state.
 
-Implement the Design Room collaboration adapter using the approved A2A direction while mapping all durable state into the existing `wishes_ops` conversation/message/proposal/decision model.
-
-Do not create a second independent A2A database.
-
-Canonical Design Room participants:
-
+Canonical roles remain configurable; Wishes default:
 ```text
-chatgpt-director  -> lead architect/director
-claude-coop       -> co-designer/challenger
-claude-google     -> implementation/reality reviewer
-claude-local      -> optional Unity/Windows/client specialist
-openai-director   -> optional API runtime representing the director role when unattended turns are required
+chatgpt-director -> lead design/director
+claude-coop      -> co-designer/challenger
+claude-google    -> implementation/reality reviewer
+claude-local     -> optional client/Windows specialist
+openai-director  -> optional unattended API runtime
 ```
+
+Support room messages, reply/thread references, proposals, BLOCK/APPROVE_WITH_NOTES/APPROVE, signoffs, Human intervention and offline recovery.
+
+Design messages cannot directly authorize implementation.
+
+## Phase 5 — Live Agent Runtime Bridge
+
+Implement a secure runtime bridge protocol.
+
+Required design:
+```text
+agent runtime bridge
+  -> outbound TLS authenticated connection
+  -> Agent Gateway
+  -> authorized subscription/event delivery
+```
+
+Never expose Redis/PostgreSQL directly to runtime devices.
+
+Runtime identity must bind to a specific enrolled `agent_instance` using the approved device/public-key enrollment model and revocable short-lived platform credentials.
 
 Support:
+- connect/disconnect/heartbeat;
+- online/offline state;
+- subscriptions;
+- pushed events/messages;
+- acknowledgements/cursors;
+- reconnect/replay;
+- revocation;
+- rate limiting;
+- per-project authorization.
 
-- room creation;
-- participant membership/roles;
-- threaded or reply-linked messages;
-- message types: proposal, response, challenge, question, evidence, alternative, risk, agreement, disagreement, summary, decision-request, human-intervention;
-- waiting-agent state;
-- synthesis/resolved state;
-- proposal attachment;
-- sign-off records/status;
-- Human intervention;
-- durable recovery after agent disconnect.
+Do not use one shared permanent agent API key.
 
-## Phase 5 — Canonical Design Room workflow enforcement
+## Phase 6 — Agent subscriptions and handoffs
 
-Represent and test the approved default workflow:
-
+Implement:
 ```text
-ChatGPT initial scope/design
- -> Claude Google baseline reality review
- -> ChatGPT <-> Claude Coop iterative design comparison
- -> Claude Google final implementation review
- -> sign-off stage
- -> Human approval if required
- -> Decision
- -> Tasks
+agent_subscription
+agent_handoff
+agent_event_cursor
 ```
 
-The system should not require semantic unanimity. It should track:
+A handoff includes:
+- from principal;
+- target agent/role;
+- project/task;
+- requested action;
+- artifact/branch/commit reference;
+- return/escalation path;
+- deadline/iteration metadata where relevant.
 
+## Phase 7 — Autonomous loop controls
+
+Support event-triggered workflow loops such as coding <-> testing without Human polling.
+
+Example:
 ```text
-APPROVE
-APPROVE_WITH_NOTES
-BLOCK
+coder -> code.ready_for_test -> tester
+tester -> test.failed -> coder
+coder -> code.ready_for_test -> tester
+tester -> test.passed -> PM / next step
 ```
 
-Specific sign-offs:
+Every loop must support:
+- max iterations;
+- time limit;
+- optional cost/token budget;
+- repeated-failure escalation;
+- Human/PM stop control;
+- no cross-project routing.
 
-```text
-DESIGN_SIGNOFF         -> claude-coop
-IMPLEMENTATION_SIGNOFF -> claude-google
-DIRECTOR_SIGNOFF       -> chatgpt-director/openai-director acting in director runtime role
-CLIENT_SIGNOFF         -> optional claude-local specialist review
-HUMAN_APPROVAL         -> when authority/risk requires it
-```
+## Phase 8 — Credential-safe runtime behavior
 
-A room may be promoted when there are zero unresolved blocking objections and the configured authority requirements are met.
+At execution time an agent may have an access claim such as `gcp:project-x:plan` but status `requires_human`.
 
-## Phase 6 — Conversation limits and safety
+The workflow must:
+1. stop that step;
+2. emit/request Human intervention;
+3. resume after the owning runtime verifies access;
+4. never request the credential value from another agent or persist it centrally.
 
-Implement configurable room limits, with initial defaults equivalent to:
+For server-side connectors, only approved opaque Secret Manager refs are visible to the connector service identity; never to task/design APIs.
 
-```text
-max_rounds: 6
-max_consecutive_turns_same_agent: 2
-```
+## Phase 9 — Fresh-session recovery
 
-At the limit, the facilitator must enter a terminal/intervention state requiring one of:
-
-- synthesize;
-- request Human input;
-- explicitly extend the room.
-
-Prevent autonomous infinite agent loops.
-
-Design-room messages must never directly grant implementation or production authority.
-
-## Phase 7 — Runtime-facing project recovery
-
-Implement a compact `get_project_state` response capable of reconstructing at least:
-
-- active tasks by agent;
-- blocked tasks/dependencies;
-- pending approvals;
-- active Design Rooms;
+`get_project_state` must reconstruct:
+- project/space;
+- PM/team;
+- active/blocked/claimable tasks;
 - latest checkpoints;
-- recent decisions;
-- branch/commit/artifact references;
-- offline/last-seen agent status where available.
+- pending approvals/Human-intervention requests;
+- active Design Rooms;
+- online/offline agents;
+- access availability metadata without secrets;
+- recent decisions/artifact refs.
 
-A fresh session should be able to retrieve deeper records by ID.
+## Phase 10 — Tests
 
-## Phase 8 — Tests
+Test at minimum:
+- cross-user and cross-project access denial;
+- MCP authorization;
+- secret/credential redaction;
+- agent revocation;
+- event idempotency;
+- event replay after transient-transport loss;
+- live push without polling;
+- offline reconnect/replay;
+- handoff routing;
+- max-loop enforcement;
+- requires-human credential flow;
+- Design Room promotion boundaries;
+- Human approval forgery resistance;
+- fresh-session recovery.
 
-Test at least:
+## Approval Gates
 
-- MCP role authorization;
-- cross-agent assignment protection;
-- no arbitrary execution capability;
-- Redis interruption and durable reconstruction;
-- idempotent event handling;
-- Design Room message persistence/order;
-- waiting/offline agent behavior;
-- max-round enforcement;
-- `BLOCK` preventing promotion;
-- `APPROVE_WITH_NOTES` not acting as a blocker;
-- explicit Proposal -> Decision -> Task boundary;
-- Human approval cannot be forged by a normal agent message;
-- fresh-session project-state recovery.
-
-## Approval gates
-
-Do not deploy new cost-bearing GCP resources in this task without the applicable Human approval.
-
-If a live Memorystore/Cloud Run resource is required and not already deployed, prepare the Terraform/code/plan and stop at the appropriate approval gate for the dependent deployment task.
+No new live Cloud Run/Cloud SQL/Redis/PubSub/IAM/Secret Manager resource or external provider credential setup without the required Human approval.
 
 ## Non-goals
 
-Do not in this task:
+Do not:
+- move user/agent provider credentials into the platform;
+- retire the inbox;
+- expand protected production authority;
+- make design messages executable;
+- create public DB/event endpoints.
 
-- connect real OpenAI or Claude Web secrets if Human credential work is required;
-- retire the Claude inbox;
-- modify Claude Local machine configuration;
-- expand production deployment authority;
-- make design discussions directly executable;
-- canonize before acceptance.
-
-## Required completion report
+## Completion Report
 
 Report:
-
-- foundation commit(s) used;
-- files/modules changed;
-- Redis/outbox strategy implemented;
-- MCP tools implemented and authorization matrix;
-- A2A/Design Room interfaces implemented;
-- sign-off/blocking semantics;
-- conversation-limit behavior;
-- tests and results;
-- branch/commit SHA(s);
-- deployment prerequisites still requiring Human action;
-- exact readiness for `deploy-agent-control-plane-gcp-claude-google.md`.
+- foundation commit;
+- event/outbox strategy;
+- MCP authz matrix;
+- A2A/Design Room implementation;
+- runtime bridge/auth model;
+- subscriptions/handoff/live-loop behavior;
+- credential-safety tests;
+- tenant security tests;
+- commits/SHAs;
+- deployment prerequisites/Human gates.
